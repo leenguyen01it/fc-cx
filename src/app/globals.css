@@ -1,0 +1,184 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #f7f4f1;
+  --card: #ffffff;
+  --card-2: #faf7f4;
+  --ink: #1f1510;
+  --muted: #6f625a;
+  --line: #ebe4de;
+  --brand: #ea580c;
+  --brand-ink: #ffffff;
+  --brand-soft: #fff1e6;
+  --team-a: #e5484d;
+  --team-a-soft: #fdecec;
+  --team-b: #2f6fed;
+  --team-b-soft: #e8f0fe;
+  --paid: #12a150;
+  --paid-soft: #e1f6e9;
+  --due: #d97706;
+  --due-soft: #fdf1dc;
+  --pitch-1: #ea580c;
+  --pitch-2: #f97316;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14100d;
+    --card: #1c1612;
+    --card-2: #241d18;
+    --ink: #f3ece6;
+    --muted: #a8998e;
+    --line: #33291f;
+    --brand: #fb923c;
+    --brand-ink: #1c0a02;
+    --brand-soft: #3a1d0b;
+    --team-a: #ff6b6f;
+    --team-a-soft: #3a1a1c;
+    --team-b: #6c9bff;
+    --team-b-soft: #172443;
+    --paid: #34d27a;
+    --paid-soft: #12301f;
+    --due: #f5a524;
+    --due-soft: #35270d;
+    --pitch-1: #9a3412;
+    --pitch-2: #c2410c;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-card-2: var(--card-2);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-soft: var(--brand-soft);
+  --color-team-a: var(--team-a);
+  --color-team-a-soft: var(--team-a-soft);
+  --color-team-b: var(--team-b);
+  --color-team-b-soft: var(--team-b-soft);
+  --color-paid: var(--paid);
+  --color-paid-soft: var(--paid-soft);
+  --color-due: var(--due);
+  --color-due-soft: var(--due-soft);
+  --font-sans: var(--font-be-vietnam), ui-sans-serif, system-ui, sans-serif;
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.pitch {
+  background:
+    radial-gradient(circle at 50% 50%, transparent 38px, rgb(255 255 255 / 0.14) 39px, rgb(255 255 255 / 0.14) 40px, transparent 41px),
+    linear-gradient(90deg, transparent calc(50% - 1px), rgb(255 255 255 / 0.14) calc(50% - 1px), rgb(255 255 255 / 0.14) calc(50% + 1px), transparent calc(50% + 1px)),
+    repeating-linear-gradient(90deg, var(--pitch-1) 0 36px, var(--pitch-2) 36px 72px);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+input,
+select,
+textarea {
+  font-size: 16px; /* chặn iOS tự zoom khi chạm vào ô nhập */
+}
+
+/* ---------- Sheet (dialog) ---------- */
+dialog.sheet {
+  max-width: 100%;
+  max-height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+}
+dialog.sheet::backdrop {
+  background: rgb(0 0 0 / 0.45);
+  backdrop-filter: blur(3px);
+  animation: fade-in 0.2s ease-out;
+}
+dialog.sheet[open] > .sheet-panel {
+  animation: sheet-up 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.05);
+}
+@media (min-width: 640px) {
+  dialog.sheet[open] > .sheet-panel {
+    animation: pop-in 0.2s ease-out;
+  }
+}
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes pop-in {
+  from { transform: scale(0.96); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes toast-in {
+  from { transform: translateY(-120%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.animate-toast { animation: toast-in 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.1); }
+.animate-fade { animation: fade-in 0.2s ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* ẩn nút tăng/giảm mặc định của input number */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type="number"] { -moz-appearance: textfield; }
+
+/* ---------- Lịch (react-day-picker) theo màu app ---------- */
+/* "html .rdp-root" để thắng CSS gốc của thư viện */
+html .rdp-root {
+  --rdp-accent-color: var(--brand);
+  --rdp-accent-background-color: var(--brand-soft);
+  --rdp-today-color: var(--brand);
+  --rdp-day-height: 44px;
+  --rdp-day-width: 44px;
+  --rdp-day_button-height: 40px;
+  --rdp-day_button-width: 40px;
+  --rdp-day_button-border-radius: 14px;
+  --rdp-selected-border: 2px solid var(--brand);
+  color: var(--ink);
+  font-size: 15px;
+}
+html .rdp-root .rdp-month_caption {
+  font-weight: 700;
+  text-transform: capitalize;
+}
+html .rdp-root .rdp-weekday {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+html .rdp-root .rdp-selected .rdp-day_button {
+  background: var(--brand);
+  color: var(--brand-ink);
+  font-weight: 700;
+}
+html .rdp-root .rdp-today:not(.rdp-selected) .rdp-day_button {
+  font-weight: 800;
+  color: var(--brand);
+}
+html .rdp-root .rdp-chevron {
+  fill: var(--brand);
+}
+html .rdp-root .rdp-outside {
+  opacity: 0.4;
+}
