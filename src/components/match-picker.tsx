@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Sheet, cx } from "./ui";
+import { startNavigation } from "./navigation-progress";
 
 export interface MatchOption {
   id: number;
@@ -83,6 +84,7 @@ export function MatchPicker({
                   type="button"
                   onClick={() => {
                     setOpen(false);
+                    startNavigation(href(o.id));
                     router.push(href(o.id));
                   }}
                   className={cx(

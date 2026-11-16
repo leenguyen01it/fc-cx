@@ -5,3 +5,4 @@ export * from "./sheet";
 export * from "./toast";
 export * from "./confirm";
 export * from "./date-field";
+export * from "./skeleton";

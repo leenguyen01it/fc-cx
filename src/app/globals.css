@@ -115,6 +115,30 @@ dialog.sheet[open] > .sheet-panel {
     animation: pop-in 0.2s ease-out;
   }
 }
+/* Đóng: trượt xuống / thu nhỏ rồi mới gỡ khỏi màn hình (Sheet thêm class "closing") */
+dialog.sheet.closing > .sheet-panel {
+  animation: sheet-down 0.2s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+dialog.sheet.closing::backdrop {
+  animation: fade-out 0.2s ease-in forwards;
+}
+@media (min-width: 640px) {
+  dialog.sheet.closing > .sheet-panel {
+    animation: pop-out 0.15s ease-in forwards;
+  }
+}
+@keyframes sheet-down {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+@keyframes pop-out {
+  from { transform: scale(1); opacity: 1; }
+  to { transform: scale(0.96); opacity: 0; }
+}
+@keyframes fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
 @keyframes sheet-up {
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
@@ -133,6 +157,8 @@ dialog.sheet[open] > .sheet-panel {
 }
 .animate-toast { animation: toast-in 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.1); }
 .animate-fade { animation: fade-in 0.2s ease-out; }
+/* Khung chờ chuyển trang: chờ 150ms mới hiện để trang nhanh không bị chớp */
+.animate-fade-delayed { animation: fade-in 200ms ease-out 150ms both; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }

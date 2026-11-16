@@ -35,6 +35,8 @@ export function Sheet({
     const d = ref.current;
     if (!d) return;
     if (open) {
+      // Mở lại khi đang chạy hiệu ứng đóng → giữ nguyên, bỏ hiệu ứng đóng
+      d.classList.remove("closing");
       if (!d.open) d.showModal();
       // Khoá cuộn trang phía sau; đếm số sheet đang mở để sheet con đóng không mở khoá khi sheet cha còn mở
       openSheets++;
@@ -44,7 +46,22 @@ export function Sheet({
         if (openSheets === 0) document.documentElement.style.overflow = "";
       };
     }
-    if (d.open) d.close();
+    if (!d.open) return;
+    // Trượt xuống (máy tính: thu nhỏ) rồi mới đóng hẳn
+    d.classList.add("closing");
+    const done = () => {
+      if (!d.classList.contains("closing")) return;
+      d.classList.remove("closing");
+      d.close();
+    };
+    const panel = d.querySelector(".sheet-panel");
+    const onEnd = (e: Event) => e.target === panel && done();
+    panel?.addEventListener("animationend", onEnd);
+    const timer = window.setTimeout(done, 250); // phòng khi hiệu ứng bị tắt
+    return () => {
+      panel?.removeEventListener("animationend", onEnd);
+      window.clearTimeout(timer);
+    };
   }, [open]);
 
   return (

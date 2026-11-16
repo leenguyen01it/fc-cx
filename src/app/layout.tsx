@@ -2,7 +2,9 @@ import type { Metadata, Viewport } from "next";
 import { Be_Vietnam_Pro } from "next/font/google";
 import "react-day-picker/style.css";
 import "./globals.css";
+import { Suspense } from "react";
 import { Toaster } from "@/components/ui/toast";
+import { NavigationProgress } from "@/components/navigation-progress";
 
 const font = Be_Vietnam_Pro({
   variable: "--font-be-vietnam",
@@ -47,6 +49,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="vi" className={`${font.variable} h-full antialiased`}>
       <body className="min-h-full font-sans">
+        {/* useSearchParams cần Suspense để không kéo cả trang thành render phía client */}
+        <Suspense fallback={null}>
+          <NavigationProgress />
+        </Suspense>
         {children}
         <Toaster />
       </body>

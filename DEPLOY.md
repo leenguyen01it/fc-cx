@@ -256,6 +256,7 @@ Nguyên tắc để không mất dữ liệu thật:
 
 | Triệu chứng | Nguyên nhân thường gặp | Cách xử lý |
 |---|---|---|
+| Build lỗi `TypeError: Invalid URL` hoặc `[drizzle] DATABASE_URL… ` | Biến database thiếu ở môi trường đang deploy, để trống, dán cả lệnh `psql '…'`, hoặc có dấu nháy | Chỉ dán phần `postgresql://…?sslmode=require`, tick đúng môi trường (Production/Preview), Redeploy |
 | Build lỗi ở `drizzle-kit migrate`, *password authentication failed* | Sai hoặc thiếu `DATABASE_URL_UNPOOLED` | Copy lại chuỗi Direct từ Neon, Redeploy |
 | Build lỗi *relation "…" already exists* | Database đã có bảng nhưng chưa có bảng `drizzle.__drizzle_migrations` (VD tạo bảng bằng tay) | Dùng database/nhánh Neon trống, hoặc chèn dòng đánh dấu như ở mục 1 |
 | Trang báo lỗi, log có *prepared statement … does not exist* | `DATABASE_URL` dùng chuỗi pooled nhưng code bị đổi `prepare` | Giữ `prepare: false` trong `src/db/index.ts` |
