@@ -35,7 +35,12 @@ export function Sheet({
     const d = ref.current;
     if (!d) return;
     if (open) {
-      if (!d.open) d.showModal();
+      if (!d.open) {
+        d.showModal();
+        // showModal() tự focus nút đầu tiên (nút đóng) → chuyển focus về chính dialog
+        d.focus({ preventScroll: true });
+        d.scrollTop = 0;
+      }
       // Chỉ bắt đầu trượt lên sau khi khung đầu tiên (panel còn nằm dưới đáy) đã vẽ xong.
       // Nếu cho chạy ngay, phần việc nặng lúc bấm (React dựng nội dung, mở dialog) ăn mất
       // phần đầu hiệu ứng → panel hiện ra đã ở lưng chừng rồi nhảy lên (giật).
@@ -70,6 +75,7 @@ export function Sheet({
   return (
     <dialog
       ref={ref}
+      tabIndex={-1}
       className="sheet m-0 mt-auto w-full sm:m-auto sm:w-[28rem]"
       // Sheet lồng nhau (VD ô chọn trong popup "Tạo trận"): sự kiện close/cancel của sheet con
       // lan lên sheet cha qua cây React → chỉ xử lý khi sự kiện là của chính sheet này.
