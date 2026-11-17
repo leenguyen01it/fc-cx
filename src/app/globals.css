@@ -93,7 +93,11 @@ textarea {
   font-size: 16px; /* chặn iOS tự zoom khi chạm vào ô nhập */
 }
 
-/* ---------- Sheet (dialog) ---------- */
+/* ---------- Sheet (dialog) ----------
+ * Mở: Sheet gọi showModal() (panel còn ở dưới đáy), 2 khung hình sau mới gắn [data-shown] → trượt lên.
+ * Đóng: bỏ [data-shown] → trượt xuống, xong transition mới close().
+ * Chỉ dùng transform / opacity (chạy trên GPU), nền mờ không blur để máy yếu không giật.
+ */
 dialog.sheet {
   max-width: 100%;
   max-height: 100%;
@@ -103,49 +107,34 @@ dialog.sheet {
   color: var(--ink);
 }
 dialog.sheet::backdrop {
-  background: rgb(0 0 0 / 0.45);
-  backdrop-filter: blur(3px);
-  animation: fade-in 0.2s ease-out;
+  background: rgb(0 0 0 / 0.5);
+  opacity: 0;
+  transition: opacity 0.2s ease-in;
 }
-dialog.sheet[open] > .sheet-panel {
-  animation: sheet-up 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.05);
+dialog.sheet[data-shown]::backdrop {
+  opacity: 1;
+  transition: opacity 0.25s ease-out;
 }
-@media (min-width: 640px) {
-  dialog.sheet[open] > .sheet-panel {
-    animation: pop-in 0.2s ease-out;
-  }
+dialog.sheet > .sheet-panel {
+  transform: translate3d(0, 100%, 0);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 1, 1);
+  will-change: transform;
 }
-/* Đóng: trượt xuống / thu nhỏ rồi mới gỡ khỏi màn hình (Sheet thêm class "closing") */
-dialog.sheet.closing > .sheet-panel {
-  animation: sheet-down 0.2s cubic-bezier(0.4, 0, 1, 1) forwards;
-}
-dialog.sheet.closing::backdrop {
-  animation: fade-out 0.2s ease-in forwards;
+dialog.sheet[data-shown] > .sheet-panel {
+  transform: translate3d(0, 0, 0);
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 }
 @media (min-width: 640px) {
-  dialog.sheet.closing > .sheet-panel {
-    animation: pop-out 0.15s ease-in forwards;
+  dialog.sheet > .sheet-panel {
+    opacity: 0;
+    transform: scale(0.96);
+    transition: transform 0.15s ease-in, opacity 0.15s ease-in;
   }
-}
-@keyframes sheet-down {
-  from { transform: translateY(0); }
-  to { transform: translateY(100%); }
-}
-@keyframes pop-out {
-  from { transform: scale(1); opacity: 1; }
-  to { transform: scale(0.96); opacity: 0; }
-}
-@keyframes fade-out {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
-@keyframes sheet-up {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
-}
-@keyframes pop-in {
-  from { transform: scale(0.96); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  dialog.sheet[data-shown] > .sheet-panel {
+    opacity: 1;
+    transform: none;
+    transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+  }
 }
 @keyframes fade-in {
   from { opacity: 0; }

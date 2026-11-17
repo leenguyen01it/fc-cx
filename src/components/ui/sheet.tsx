@@ -35,31 +35,34 @@ export function Sheet({
     const d = ref.current;
     if (!d) return;
     if (open) {
-      // Mở lại khi đang chạy hiệu ứng đóng → giữ nguyên, bỏ hiệu ứng đóng
-      d.classList.remove("closing");
       if (!d.open) d.showModal();
+      // Chỉ bắt đầu trượt lên sau khi khung đầu tiên (panel còn nằm dưới đáy) đã vẽ xong.
+      // Nếu cho chạy ngay, phần việc nặng lúc bấm (React dựng nội dung, mở dialog) ăn mất
+      // phần đầu hiệu ứng → panel hiện ra đã ở lưng chừng rồi nhảy lên (giật).
+      let raf = requestAnimationFrame(() => {
+        raf = requestAnimationFrame(() => d.setAttribute("data-shown", ""));
+      });
       // Khoá cuộn trang phía sau; đếm số sheet đang mở để sheet con đóng không mở khoá khi sheet cha còn mở
       openSheets++;
       document.documentElement.style.overflow = "hidden";
       return () => {
+        cancelAnimationFrame(raf);
         openSheets = Math.max(0, openSheets - 1);
         if (openSheets === 0) document.documentElement.style.overflow = "";
       };
     }
     if (!d.open) return;
     // Trượt xuống (máy tính: thu nhỏ) rồi mới đóng hẳn
-    d.classList.add("closing");
-    const done = () => {
-      if (!d.classList.contains("closing")) return;
-      d.classList.remove("closing");
-      d.close();
-    };
+    d.removeAttribute("data-shown");
     const panel = d.querySelector(".sheet-panel");
+    const done = () => {
+      if (!d.hasAttribute("data-shown") && d.open) d.close();
+    };
     const onEnd = (e: Event) => e.target === panel && done();
-    panel?.addEventListener("animationend", onEnd);
-    const timer = window.setTimeout(done, 250); // phòng khi hiệu ứng bị tắt
+    panel?.addEventListener("transitionend", onEnd);
+    const timer = window.setTimeout(done, 350); // phòng khi hiệu ứng bị tắt / không chạy
     return () => {
-      panel?.removeEventListener("animationend", onEnd);
+      panel?.removeEventListener("transitionend", onEnd);
       window.clearTimeout(timer);
     };
   }, [open]);

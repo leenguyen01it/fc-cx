@@ -78,7 +78,8 @@ export interface ItemData {
 type Item = ItemData & { key: string };
 /** team null = chỉ ăn */
 type Slot = { team: Team | null; ate: boolean; pending?: boolean };
-type Choice = "none" | "A" | "B" | "eat";
+/** play = có đá nhưng chưa chọn đội (VD quên điểm danh): tự chọn đội khi vào đóng tiền. */
+type Choice = "none" | "play" | "A" | "B" | "eat";
 
 export interface EditorProps {
   id: number;
@@ -244,7 +245,8 @@ export function MatchEditor({
       else if (c === "eat") next.set(mid, { team: null, ate: true });
       else {
         const p = prev.get(mid);
-        next.set(mid, { team: c, ate: p?.team || p?.pending ? p.ate : (rsvpOf.get(mid)?.eat ?? true) });
+        const ate = p?.team || p?.pending ? p.ate : (rsvpOf.get(mid)?.eat ?? true);
+        next.set(mid, c === "play" ? { team: null, ate, pending: true } : { team: c, ate });
       }
       return next;
     });
@@ -462,10 +464,10 @@ export function MatchEditor({
                 <div
                   role="radiogroup"
                   aria-label={`Đội của ${m.name}`}
-                  className={cx("grid gap-1 rounded-xl bg-card-2 p-1", teamless ? "grid-cols-3" : "grid-cols-4")}
+                  className={cx("grid gap-1 rounded-xl bg-card-2 p-1", teamless ? "grid-cols-3" : "grid-cols-5")}
                 >
-                  {(teamless ? (["none", "A", "eat"] as const) : (["none", "A", "B", "eat"] as const)).map((c) => {
-                    const cur: Choice | "play" = !s
+                  {(teamless ? (["none", "A", "eat"] as const) : (["none", "play", "A", "B", "eat"] as const)).map((c) => {
+                    const cur: Choice = !s
                       ? "none"
                       : teamless && (s.team || s.pending)
                         ? "A"
@@ -479,18 +481,37 @@ export function MatchEditor({
                         type="button"
                         role="radio"
                         aria-checked={on}
-                        aria-label={c === "none" ? "Không tham gia" : c === "eat" ? "Chỉ ăn" : teamless ? "Đá" : teamName(c, tn)}
+                        aria-label={
+                          c === "none"
+                            ? "Không tham gia"
+                            : c === "eat"
+                              ? "Chỉ ăn"
+                              : c === "play"
+                                ? "Đá, tự chọn đội khi đóng tiền"
+                                : teamless
+                                  ? "Đá"
+                                  : teamName(c, tn)
+                        }
                         onClick={() => setSlot(m.id, c)}
                         className={cx(
-                          "flex h-9 items-center justify-center rounded-lg px-1 text-sm font-bold whitespace-nowrap transition active:scale-95",
+                          "flex h-9 min-w-0 items-center justify-center rounded-lg px-1 text-sm font-bold whitespace-nowrap transition active:scale-95",
                           on && c === "A" && "bg-team-a text-white shadow-sm",
                           on && c === "B" && "bg-team-b text-white shadow-sm",
+                          on && c === "play" && "bg-due text-white shadow-sm",
                           on && c === "eat" && "bg-brand text-brand-ink shadow-sm",
                           on && c === "none" && "bg-card text-ink shadow-sm",
                           !on && "text-muted",
                         )}
                       >
-                        {c === "none" ? <X className="size-4" /> : c === "eat" ? "Chỉ ăn" : teamless ? "Đá" : tn[c]}
+                        {c === "none" ? (
+                          <X className="size-4" />
+                        ) : c === "eat" ? (
+                          "Chỉ ăn"
+                        ) : c === "play" || teamless ? (
+                          "Đá"
+                        ) : (
+                          <span className="truncate">{tn[c]}</span>
+                        )}
                       </button>
                     );
                   })}
