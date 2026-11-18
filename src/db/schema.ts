@@ -1,4 +1,5 @@
 import {
+  type AnyPgColumn,
   boolean,
   date,
   integer,
@@ -30,6 +31,8 @@ export const settings = pgTable("settings", {
   accountName: text("account_name").notNull().default(""),
   /** Tài khoản riêng của đội: tiền vào không có mã đội vẫn giữ lại để admin xác nhận. */
   dedicatedAccount: boolean("dedicated_account").notNull().default(true),
+  /** Thành viên đứng tên tài khoản nhận tiền: phần của họ vẫn được chia nhưng tự coi là đã trả. */
+  treasurerId: integer("treasurer_id").references((): AnyPgColumn => members.id, { onDelete: "set null" }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

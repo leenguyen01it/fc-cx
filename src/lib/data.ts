@@ -120,7 +120,9 @@ export async function getTeamState(): Promise<TeamState> {
   const ledgers = new Map<number, MemberLedger>();
   const index = new Map<string, AllocatedCharge>();
   for (const m of mems) {
-    const l = allocate(chargesByMember.get(m.id) ?? [], paysByMember.get(m.id) ?? []);
+    const l = allocate(chargesByMember.get(m.id) ?? [], paysByMember.get(m.id) ?? [], {
+      selfFunded: m.id === st.treasurerId,
+    });
     ledgers.set(m.id, l);
     for (const c of l.charges) index.set(`${c.matchId}:${m.id}`, c);
   }

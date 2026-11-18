@@ -58,6 +58,10 @@ export async function saveSettings(_: ActionState, form: FormData): Promise<Acti
   const p = parse(settingsSchema, form);
   if (!p.success) return { fieldErrors: toFieldErrors(p.error) };
   const v = p.data;
+  if (v.treasurerId != null) {
+    const [m] = await db.select({ id: members.id }).from(members).where(eq(members.id, v.treasurerId));
+    if (!m) return { fieldErrors: { treasurerId: "Không tìm thấy thành viên" } };
+  }
   await getSettings();
   await db
     .update(settings)
@@ -69,6 +73,7 @@ export async function saveSettings(_: ActionState, form: FormData): Promise<Acti
       accountNo: v.accountNo,
       accountName: v.accountName,
       dedicatedAccount: v.dedicatedAccount,
+      treasurerId: v.treasurerId,
       transferSuffix: v.transferSuffix,
       defaultVenue: v.defaultVenue,
       defaultTime: v.defaultTime,

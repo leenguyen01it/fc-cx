@@ -30,7 +30,10 @@ describe("memberCreateSchema", () => {
 describe("settingsSchema", () => {
   const base = { teamName: "FC CX", prefix: "cx", bankBin: "", accountNo: "", accountName: "", dedicatedAccount: "on", transferSuffix: "CK đá bóng", defaultVenue: "Sân bóng Mai Về", defaultTime: "18:00", teamAName: "Nhất", teamBName: "Bét" };
   it("cho phép để trống toàn bộ thông tin ngân hàng", () => {
-    expect(settingsSchema.parse(base)).toMatchObject({ prefix: "CX", dedicatedAccount: true, transferSuffix: "CK da bong" });
+    expect(settingsSchema.parse(base)).toMatchObject({ prefix: "CX", dedicatedAccount: true, transferSuffix: "CK da bong", treasurerId: null });
+    expect(settingsSchema.parse({ ...base, treasurerId: "" }).treasurerId).toBeNull();
+    expect(settingsSchema.parse({ ...base, treasurerId: "7" }).treasurerId).toBe(7);
+    expect(settingsSchema.safeParse({ ...base, treasurerId: "abc" }).success).toBe(false);
   });
   it("đã nhập 1 ô ngân hàng thì phải đủ cả 3", () => {
     const e = errs(settingsSchema.safeParse({ ...base, bankBin: "970422" }));

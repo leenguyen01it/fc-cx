@@ -73,7 +73,7 @@ export default async function MemberPage(props: PageProps<"/the/[code]">) {
         </p>
       </Card>
 
-      <QrCard
+      {m.id !== st.treasurerId && <QrCard
         teamName={st.teamName}
         name={m.name}
         content={content}
@@ -82,7 +82,7 @@ export default async function MemberPage(props: PageProps<"/the/[code]">) {
         bankName={st.bankName}
         accountNo={st.accountNo}
         accountName={st.accountName}
-      />
+      />}
 
       {pendingMatches.length > 0 && (
         <Card className="mt-4">

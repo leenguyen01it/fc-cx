@@ -161,6 +161,25 @@ describe("allocate (FIFO)", () => {
     const over = allocate([{ matchId: 1, date: "2026-11-01", amount: 100_000 }], [{ amount: 150_000, at: d("2026-11-02") }]);
     expect(over.balance).toBe(50_000);
   });
+
+  it("chủ tài khoản: phần còn nợ tự coi là đã trả, khoản đã ghi vẫn giữ", () => {
+    const r = allocate(
+      [
+        { matchId: 1, date: "2026-11-01", amount: 100_000 },
+        { matchId: 2, date: "2026-11-08", amount: 120_000 },
+      ],
+      [{ amount: 100_000, at: d("2026-11-02"), matchId: 1 }],
+      { selfFunded: true },
+    );
+    expect(r.charges.map((c) => [c.status, c.remaining])).toEqual([
+      ["paid", 0],
+      ["paid", 0],
+    ]);
+    expect(r.charges[0].paidAt).toEqual(d("2026-11-02"));
+    expect(r.charges[1].paidAt).toBeNull();
+    expect(r.balance).toBe(0);
+    expect(r.totalPaid).toBe(220_000);
+  });
 });
 
 describe("vietqr", () => {

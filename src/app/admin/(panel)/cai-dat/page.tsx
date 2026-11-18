@@ -1,6 +1,6 @@
-import { Users, CalendarClock, MapPin, MessageSquareText, Hash, Landmark, Save, Settings, Shield, UserRound, Wallet } from "lucide-react";
+import { Users, CalendarClock, KeyRound, MapPin, MessageSquareText, Hash, Landmark, Save, Settings, Shield, UserRound, Wallet } from "lucide-react";
 import Image from "next/image";
-import { getSettings } from "@/lib/data";
+import { getMembers, getSettings } from "@/lib/data";
 import { BANKS } from "@/lib/vietqr";
 import { saveSettings } from "../../actions";
 import { ActionForm } from "@/components/action-form";
@@ -11,7 +11,13 @@ import type { Settings as SettingsRow } from "@/db/schema";
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
-  const st = await getSettings();
+  const [st, mems] = await Promise.all([getSettings(), getMembers()]);
+  const treasurerOptions = [
+    { value: "", label: "Không có" },
+    ...mems
+      .filter((m) => (m.active && !m.guest) || m.id === st.treasurerId)
+      .map((m) => ({ value: String(m.id), label: m.name, keywords: m.code })),
+  ];
 
   return (
     <div className="space-y-3">
@@ -64,6 +70,17 @@ export default async function SettingsPage() {
             defaultChecked={st.dedicatedAccount}
             label="Tài khoản riêng của đội"
           />
+          <Field label="Thành viên đứng tên tài khoản" name="treasurerId" optional>
+            <Select
+              name="treasurerId"
+              defaultValue={st.treasurerId ? String(st.treasurerId) : ""}
+              title="Thành viên đứng tên tài khoản"
+              placeholder="Không có"
+              icon={<KeyRound />}
+              searchable
+              options={treasurerOptions}
+            />
+          </Field>
         </ActionForm>
       </Card>
 
@@ -102,6 +119,7 @@ function HiddenSettings({ st, except }: { st: SettingsRow; except: string[] }) {
     accountNo: st.accountNo,
     accountName: st.accountName,
     dedicatedAccount: st.dedicatedAccount ? "on" : "",
+    treasurerId: st.treasurerId ? String(st.treasurerId) : "",
   };
   return (
     <>

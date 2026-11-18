@@ -101,6 +101,10 @@ export const settingsSchema = z
       .transform((s) => stripDiacritics(s).toUpperCase().replace(/\s+/g, " "))
       .pipe(z.union([z.literal(""), z.string().regex(/^[A-Z ]{2,50}$/, "Tên chủ tài khoản không dấu, VD: NGUYEN VAN A")])),
     dedicatedAccount: bool,
+    treasurerId: z.preprocess(
+      (v) => (v === "" || v == null ? null : Number(v)),
+      z.number({ error: "Chọn thành viên" }).int().positive("Chọn thành viên").nullable(),
+    ),
     transferSuffix: z
       .string()
       .trim()

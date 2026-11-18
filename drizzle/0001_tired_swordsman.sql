@@ -1,0 +1,2 @@
+ALTER TABLE "settings" ADD COLUMN "treasurer_id" integer;--> statement-breakpoint
+ALTER TABLE "settings" ADD CONSTRAINT "settings_treasurer_id_members_id_fk" FOREIGN KEY ("treasurer_id") REFERENCES "public"."members"("id") ON DELETE set null ON UPDATE no action;

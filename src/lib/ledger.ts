@@ -37,7 +37,19 @@ export interface MemberLedger {
   balance: number;
 }
 
-export function allocate(charges: LedgerCharge[], payments: LedgerPayment[]): MemberLedger {
+export interface AllocateOptions {
+  /**
+   * Chủ tài khoản nhận tiền: không tự chuyển cho chính mình → phần còn nợ của mỗi trận
+   * coi như đã trả (paidAt = null). Khoản đã ghi trước đó vẫn được tính bình thường.
+   */
+  selfFunded?: boolean;
+}
+
+export function allocate(
+  charges: LedgerCharge[],
+  payments: LedgerPayment[],
+  opts: AllocateOptions = {},
+): MemberLedger {
   const sortedCharges = [...charges].sort(
     (a, b) => a.date.localeCompare(b.date) || a.matchId - b.matchId,
   );
@@ -82,7 +94,18 @@ export function allocate(charges: LedgerCharge[], payments: LedgerPayment[]): Me
     }
   }
 
+  let selfPaid = 0;
+  if (opts.selfFunded) {
+    for (const c of out) {
+      if (c.remaining <= 0) continue;
+      selfPaid += c.remaining;
+      c.paid = c.amount;
+      c.remaining = 0;
+      c.status = "paid";
+    }
+  }
+
   const totalCharged = charges.reduce((s, c) => s + c.amount, 0);
-  const totalPaid = sortedPayments.reduce((s, p) => s + p.amount, 0);
+  const totalPaid = sortedPayments.reduce((s, p) => s + p.amount, 0) + selfPaid;
   return { charges: out, totalCharged, totalPaid, balance: totalPaid - totalCharged };
 }
