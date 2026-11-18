@@ -256,6 +256,13 @@ export const matchSchema = z
       if (it.sponsorAmount > 0 && !it.sponsorName.trim())
         ctx.addIssue({ code: "custom", path: ["items", i, "sponsorName"], message: "Ghi tên người ủng hộ" });
     });
+    // Tiền ăn chỉ bổ đầu người đi ăn → không ai ăn thì khoản đó không thu được của ai
+    if (!m.players.some((p) => p.ate))
+      m.items.forEach((it, i) => {
+        const foodOnly = it.rule === "eaters" || (it.rule === "ratio" && it.eatersOnly) || (it.rule === "bet" && !it.includeNonEaters);
+        if (foodOnly && it.amount > it.sponsorAmount)
+          ctx.addIssue({ code: "custom", path: ["items", i, "amount"], message: "Chưa có ai đi ăn để bổ đầu khoản này" });
+      });
     const needsResult = m.items.some((it) => it.rule === "ratio" || it.rule === "bet");
     if (needsResult && m.scoreA == null)
       ctx.addIssue({ code: "custom", path: ["scoreA"], message: "Nhập tỷ số để chia tiền sân / kèo" });

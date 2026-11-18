@@ -14,14 +14,14 @@ const base = {
 
 export const PRESETS = {
   standard: {
-    label: "Kèo chuẩn: sân 7/3 · ăn 50/50",
+    label: "Kèo chuẩn: sân 7/3 · tiền ăn chỉ bổ đầu người đi ăn",
     items: [
       { ...base, name: "Tiền sân", amount: 0, rule: "ratio", loserPct: 70 },
-      { ...base, name: "Tiền ăn", amount: 0, rule: "ratio", loserPct: 50, eatersOnly: true },
+      { ...base, name: "Tiền ăn", amount: 0, rule: "eaters" },
     ] as PresetItem[],
   },
   bet: {
-    label: "Kèo gà: sân 50/50 · ăn chia đều · gà đội thua",
+    label: "Kèo gà: sân 50/50 · tiền ăn chỉ bổ đầu người đi ăn · gà đội thua",
     items: [
       { ...base, name: "Tiền sân", amount: 0, rule: "ratio", loserPct: 50 },
       { ...base, name: "Tiền ăn", amount: 0, rule: "eaters" },
@@ -39,7 +39,7 @@ export type PresetKey = keyof typeof PRESETS;
 
 export const RULE_LABELS: Record<SplitItem["rule"], string> = {
   ratio: "Tỷ lệ thắng/thua",
-  eaters: "Chia đều người ăn",
+  eaters: "Chỉ bổ đầu người đi ăn",
   all: "Chia đều tất cả",
   bet: "Kèo – một đội chịu",
 };

@@ -182,6 +182,21 @@ describe("allocate (FIFO)", () => {
   });
 });
 
+describe("tiền ăn chỉ bổ đầu người đi ăn", () => {
+  const ps: SplitPlayer[] = [
+    { memberId: 1, team: "A", ate: true },
+    { memberId: 2, team: "A", ate: false },
+    { memberId: 3, team: "B", ate: true },
+    { memberId: 4, team: "B", ate: false },
+    { memberId: 5, team: null, ate: true }, // chỉ đi ăn, không đá
+  ];
+  const r = computeSplit(ps, [item({ name: "Ăn", amount: 500_000, rule: "eaters" })], 2, 1);
+  it("3 người ăn chia đều, làm tròn lên nghìn; người không ăn không phải trả", () => {
+    expect([1, 2, 3, 4, 5].map((id) => by(r, id).total)).toEqual([167_000, 0, 167_000, 0, 167_000]);
+    expect(r.items[0].groups).toEqual([{ label: "Người đi ăn", count: 3, perPerson: 167_000 }]);
+  });
+});
+
 describe("vietqr", () => {
   it("crc16 chuẩn CCITT-FALSE", () => {
     expect(crc16("123456789")).toBe("29B1");

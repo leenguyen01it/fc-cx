@@ -7,8 +7,8 @@ import { ActionForm } from "@/components/action-form";
 import { btn, cx, DateField, Field, Select, Sheet } from "@/components/ui";
 
 const PRESET_OPTIONS = [
-  { value: "standard", label: "Kèo chuẩn", description: "Sân 7/3 · ăn 50/50", icon: <Scale /> },
-  { value: "bet", label: "Kèo gà", description: "Sân 50/50 · ăn chia đều · gà đội thua", icon: <Drumstick /> },
+  { value: "standard", label: "Kèo chuẩn", description: "Sân 7/3 · tiền ăn chỉ bổ đầu người đi ăn", icon: <Scale /> },
+  { value: "bet", label: "Kèo gà", description: "Sân 50/50 · tiền ăn chỉ bổ đầu người đi ăn · gà đội thua", icon: <Drumstick /> },
   { value: "away", label: "Đá đối", description: "Sân phần mình trả · chia đều", icon: <Swords /> },
   { value: "empty", label: "Trống", description: "Tự thêm từng khoản", icon: <ListPlus /> },
 ];

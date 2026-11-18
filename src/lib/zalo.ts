@@ -14,7 +14,7 @@ export interface ZaloMatchInput {
 
 const RULE_TEXT: Record<string, (i: SplitResult["items"][number]) => string> = {
   ratio: (b) => (b.item.loserPct === 50 ? "50/50" : `${b.item.loserPct / 10}/${10 - b.item.loserPct / 10}`),
-  eaters: (b) => `${b.groups[0]?.count ?? 0} người ăn`,
+  eaters: (b) => `bổ đầu ${b.groups[0]?.count ?? 0} người đi ăn`,
   all: () => "chia đều",
   bet: (b) => (b.item.bearer === "loser" ? "đội thua" : "đội thắng"),
 };

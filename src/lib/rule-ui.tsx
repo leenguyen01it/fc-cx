@@ -11,7 +11,7 @@ export const RULE_ICONS: Record<SplitItem["rule"], LucideIcon> = {
 
 export const RULE_HINTS: Record<SplitItem["rule"], string> = {
   ratio: "Tiền sân: đội thua trả nhiều hơn (7/3, 5/5…)",
-  eaters: "Tiền ăn: chỉ người có đi ăn mới chia",
+  eaters: "Tiền ăn: chỉ bổ đầu người đi ăn, không ăn không phải trả",
   all: "Mọi người có mặt chia đều (nước, áo…)",
   bet: "Bia, gà…: một đội chịu toàn bộ",
 };

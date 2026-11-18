@@ -87,6 +87,13 @@ describe("matchSchema", () => {
     expect(r.success).toBe(true);
     expect(r.data!.players.map((p) => [p.team, p.pending])).toEqual([["A", false], ["A", false], [null, false]]);
   });
+  it("công bố: có tiền ăn mà không ai đi ăn thì báo lỗi", () => {
+    const noEat = [{ memberId: 1, team: "A" as const, ate: false }, { memberId: 2, team: "B" as const, ate: false }];
+    const food = { ...item, name: "Tiền ăn", amount: 300000, rule: "eaters" as const };
+    expect(errs(matchSchema.safeParse({ ...ok, players: noEat, items: [item, food] }))).toHaveProperty("items.1.amount");
+    expect(matchSchema.safeParse({ ...ok, players: noEat, items: [item] }).success).toBe(true);
+    expect(matchSchema.safeParse({ ...ok, items: [item, food] }).success).toBe(true);
+  });
   it("ngày không tồn tại", () => {
     expect(errs(matchSchema.safeParse({ ...ok, date: "2026-02-30" }))).toHaveProperty("date");
   });
