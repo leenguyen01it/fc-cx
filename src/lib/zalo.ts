@@ -10,7 +10,11 @@ export interface ZaloMatchInput {
   split: SplitResult;
   names: Map<number, string>;
   teamNames?: TeamNames;
+  /** Link trận trên trang đội – in ở cuối để mọi người vào đóng tiền. */
+  link?: string;
 }
+
+const payLine = (link?: string) => (link ? ["", `💳 Xem số tiền & đóng tiền tại: ${link}`] : []);
 
 const RULE_TEXT: Record<string, (i: SplitResult["items"][number]) => string> = {
   ratio: (b) => (b.item.loserPct === 50 ? "50/50" : `${b.item.loserPct / 10}/${10 - b.item.loserPct / 10}`),
@@ -67,6 +71,7 @@ export function buildSummaryText(m: ZaloMatchInput): string {
     }
   }
 
+  lines.push(...payLine(m.link));
   return lines.join("\n");
 }
 
@@ -74,6 +79,7 @@ export function buildReminderText(
   teamName: string,
   date: string,
   unpaid: { name: string; remaining: number | null }[],
+  link?: string,
 ): string {
   const d = formatDate(date);
   if (unpaid.length === 0) return `✅ ${teamName} · Trận ${d.short}: mọi người đã trả đủ. Cảm ơn cả nhà!`;
@@ -81,6 +87,7 @@ export function buildReminderText(
     `⏰ NHẮC ĐÓNG TIỀN · ${teamName.toUpperCase()} · TRẬN ${d.short}`,
     `Còn ${unpaid.length} người chưa đóng:`,
     ...unpaid.map((u) => `• ${u.name}: ${u.remaining == null ? "chọn đội để xem số tiền" : formatK(u.remaining)}`),
+    ...payLine(link),
   ];
   return lines.join("\n");
 }

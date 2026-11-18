@@ -5,7 +5,7 @@ import { useState } from "react";
 import { saveMemberCard, type MemberCardInput } from "./member-card-image";
 import { btn, cx, toast } from "./ui";
 
-/** Lưu thẻ QR cố định (không kèm số tiền) – giống hệt ảnh ở trang cá nhân. */
+/** Lưu ảnh QR: thẻ cố định (không số tiền) hoặc QR kèm số tiền của khoản đang trả. */
 export function SaveQrButton({ card, className }: { card: MemberCardInput; className?: string }) {
   const [busy, setBusy] = useState(false);
   return (
@@ -17,7 +17,7 @@ export function SaveQrButton({ card, className }: { card: MemberCardInput; class
           setBusy(true);
           try {
             const r = await saveMemberCard(card);
-            if (r !== "cancelled") toast.success("Đã lưu thẻ QR");
+            if (r !== "cancelled") toast.success(card.amount ? "Đã lưu ảnh QR" : "Đã lưu thẻ QR");
           } catch {
             toast.error("Không tạo được ảnh, thử lại nhé");
           } finally {
@@ -27,7 +27,7 @@ export function SaveQrButton({ card, className }: { card: MemberCardInput; class
         className={cx(btn.ghost, "w-full")}
       >
         {busy ? <LoaderCircle className="animate-spin" /> : <Download />}
-        Lưu thẻ QR của bạn
+        {card.amount ? "Lưu ảnh QR (kèm số tiền)" : "Lưu thẻ QR của bạn"}
       </button>
     </div>
   );

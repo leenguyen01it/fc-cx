@@ -80,25 +80,37 @@ export const BANKS: { bin: string; name: string; code: string }[] = [
   { bin: "970433", name: "VietBank", code: "vietbank" },
 ];
 
-/** Link mở app ngân hàng, điền sẵn thông tin chuyển khoản (dịch vụ deeplink của VietQR). */
+/**
+ * Link mở app ngân hàng, điền sẵn thông tin chuyển khoản (dịch vụ deeplink của VietQR).
+ * Dựng y hệt link mẫu của VietQR – app ngân hàng (VD MB) không tự điền nếu link khác mẫu:
+ *  - thứ tự app, am, tn, ba, url; không gửi bn
+ *  - "@" trong ba và ":/" trong url để nguyên (không mã hoá), khoảng trắng thành "+"
+ *  - nội dung chỉ chữ & số, tối đa 25 ký tự; url chỉ origin + path (không query)
+ */
 export function bankAppDeeplink(o: {
   app: string;
   bankBin: string;
   accountNo: string;
-  accountName?: string;
   amount: number;
   content: string;
   returnUrl: string;
 }): string | null {
   const bank = BANKS.find((b) => b.bin === o.bankBin);
-  if (!bank) return null;
-  const q = new URLSearchParams({
-    app: o.app,
-    ba: `${o.accountNo}@${bank.code}`,
-    am: String(Math.round(o.amount)),
-    tn: o.content,
-    url: o.returnUrl,
-  });
-  if (o.accountName) q.set("bn", o.accountName);
-  return `https://dl.vietqr.io/pay?${q.toString()}`;
+  if (!bank || !/^\d+$/.test(o.accountNo)) return null;
+  const tn = o.content
+    .replace(/[^A-Za-z0-9 ]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, MAX_CONTENT)
+    .trim()
+    .replace(/ /g, "+");
+  let back = o.returnUrl;
+  try {
+    const u = new URL(o.returnUrl);
+    back = u.origin + u.pathname;
+  } catch {}
+  // Giữ ":/" như mẫu, chỉ mã hoá ký tự lạ (nếu có)
+  back = back.replace(/[^A-Za-z0-9:/._~-]/g, (c) => encodeURIComponent(c));
+  const app = encodeURIComponent(o.app);
+  return `https://dl.vietqr.io/pay?app=${app}&am=${Math.round(o.amount)}&tn=${tn}&ba=${o.accountNo}@${bank.code}&url=${back}`;
 }

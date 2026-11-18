@@ -4,6 +4,7 @@ import Link from "next/link";
 import { getMatchLogs, getOpenMatches, getTeamState, teamNamesOf } from "@/lib/data";
 import { formatDate } from "@/lib/text";
 import { isAdmin } from "@/lib/auth";
+import { siteUrl } from "@/lib/site";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { MatchPicker, type MatchOption } from "@/components/match-picker";
 import { RsvpPanel } from "@/components/public/rsvp-panel";
@@ -22,7 +23,7 @@ export default async function Home(props: PageProps<"/">) {
   const ngay = typeof sp.ngay === "string" && /^\d{4}-\d{2}-\d{2}$/.test(sp.ngay) ? sp.ngay : undefined;
   const tranId = typeof sp.tran === "string" ? Number(sp.tran) : NaN;
 
-  const [state, open, admin] = await Promise.all([getTeamState(), getOpenMatches(), isAdmin()]);
+  const [state, open, admin, base] = await Promise.all([getTeamState(), getOpenMatches(), isAdmin(), siteUrl()]);
   const tn = teamNamesOf(state.settings);
 
   // Danh sách trận trên link chung: đang điểm danh / đã huỷ / đã đá – mới nhất trước
@@ -196,7 +197,7 @@ export default async function Home(props: PageProps<"/">) {
         {tab === "tran" && m && <MatchPicker options={options} current={m.id} teamNames={tn} />}
         {tab === "tran" &&
           (bundle ? (
-            <MatchTab state={state} bundle={bundle} logs={logs} admin={admin} />
+            <MatchTab state={state} bundle={bundle} logs={logs} admin={admin} siteUrl={base} />
           ) : openMatch ? (
             <RsvpPanel
               matchId={openMatch.match.id}

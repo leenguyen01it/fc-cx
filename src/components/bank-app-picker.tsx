@@ -50,7 +50,6 @@ export function BankAppPicker({ bank, amount, content }: { bank: BankInfo; amoun
       app: app.id,
       bankBin: bank.bankBin,
       accountNo: bank.accountNo,
-      accountName: bank.accountName,
       amount,
       content,
       returnUrl: window.location.href,

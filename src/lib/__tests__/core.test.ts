@@ -6,7 +6,7 @@ import { parseTransferContent } from "../reconcile";
 import { suggestCode } from "../text";
 import { transferContent } from "../reconcile";
 import { bankAppDeeplink } from "../vietqr";
-import { buildSummaryText } from "../zalo";
+import { buildReminderText, buildSummaryText } from "../zalo";
 
 const item = (p: Partial<SplitItem>): SplitItem => ({
   id: p.name ?? "x",
@@ -150,6 +150,7 @@ describe("computeSplit", () => {
       split: computeSplit(players, sponsored, 2, 4), names });
     expect(txt).toContain("Tiền ăn 1.200k − 300k ủng hộ");
     expect(txt).toContain("🎁 Cảm ơn Anh Tuấn đã ủng hộ 300k tiền ăn!");
+    expect(txt).not.toContain("💳");
     expect(txt).toContain("Đội thua: 185k/người");
   });
 
@@ -212,6 +213,17 @@ describe("allocate (FIFO)", () => {
     expect(r.charges[1].paidAt).toBeNull();
     expect(r.balance).toBe(0);
     expect(r.totalPaid).toBe(220_000);
+  });
+});
+
+describe("link đóng tiền cuối tin nhắn Zalo", () => {
+  const link = "https://fc.example/?tran=3";
+  it("tổng kết trận và nhắc đóng tiền đều có link ở dòng cuối", () => {
+    const split = computeSplit([{ memberId: 1, team: null, ate: true }], [item({ name: "Ăn", amount: 100_000, rule: "eaters" })], null, null);
+    const sum = buildSummaryText({ teamName: "FC CX", date: "2026-11-15", venue: "", scoreA: null, scoreB: null, split, names: new Map([[1, "A"]]), link });
+    expect(sum.split("\n").at(-1)).toBe(`💳 Xem số tiền & đóng tiền tại: ${link}`);
+    const rem = buildReminderText("FC CX", "2026-11-15", [{ name: "A", remaining: 100_000 }], link);
+    expect(rem.split("\n").at(-1)).toBe(`💳 Xem số tiền & đóng tiền tại: ${link}`);
   });
 });
 
@@ -296,14 +308,18 @@ describe("nội dung chuyển khoản & deeplink", () => {
     expect(parseTransferContent("CX HUNG CK da bong", "CX", ["HUNG", "NAM"])).toEqual({ hasPrefix: true, code: "HUNG" });
     expect(parseTransferContent("MBVCB.123.CX HUNG CK da bong.CT tu 0123", "CX", ["HUNG"]).code).toBe("HUNG");
   });
-  it("deeplink VietQR đúng tham số", () => {
-    const u = new URL(
-      bankAppDeeplink({ app: "mb", bankBin: "970422", accountNo: "0123", accountName: "NGUYEN VAN A", amount: 172000, content: "CX HUNG CK da bong", returnUrl: "https://x/" })!,
-    );
-    expect(u.origin + u.pathname).toBe("https://dl.vietqr.io/pay");
-    expect(Object.fromEntries(u.searchParams)).toEqual({
-      app: "mb", ba: "0123@mb", am: "172000", tn: "CX HUNG CK da bong", url: "https://x/", bn: "NGUYEN VAN A",
-    });
+  it("deeplink VietQR dựng y hệt link mẫu (để app tự điền)", () => {
+    const link = bankAppDeeplink({ app: "mb", bankBin: "970422", accountNo: "0123", amount: 172000, content: "CX HUNG CK da bong", returnUrl: "https://fc.example/?tran=3#x" })!;
+    expect(link).toBe("https://dl.vietqr.io/pay?app=mb&am=172000&tn=CX+HUNG+CK+da+bong&ba=0123@mb&url=https://fc.example/");
+    const u = new URL(link);
+    expect(Object.fromEntries(u.searchParams)).toEqual({ app: "mb", am: "172000", tn: "CX HUNG CK da bong", ba: "0123@mb", url: "https://fc.example/" });
+  });
+  it("deeplink: nội dung chỉ chữ & số, tối đa 25 ký tự", () => {
+    const link = bankAppDeeplink({ app: "icb", bankBin: "970415", accountNo: "0123", amount: 5000, content: "CX-HUNG, CK da bong tran 15/11 nhe", returnUrl: "https://x/the/HUNG" })!;
+    const tn = new URL(link).searchParams.get("tn")!;
+    expect(tn).toBe("CXHUNG CK da bong tran 15");
+    expect(tn.length).toBeLessThanOrEqual(25);
+    expect(link.endsWith("&ba=0123@icb&url=https://x/the/HUNG")).toBe(true);
   });
 });
 

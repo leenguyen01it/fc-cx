@@ -39,8 +39,11 @@ export function MatchTab({
   bundle,
   logs,
   admin = false,
+  siteUrl,
 }: {
   admin?: boolean;
+  /** URL gốc của trang, để in link vào tin nhắn Zalo. */
+  siteUrl: string;
   state: TeamState;
   bundle: MatchBundle;
   logs: { at: Date; detail: string }[];
@@ -99,6 +102,7 @@ export function MatchTab({
   const groupName = (t: Team) => (split.teamless ? "Người đá" : teamName(t, tn));
   const bank = { bankBin: st.bankBin, bankName: st.bankName, accountNo: st.accountNo, accountName: st.accountName };
 
+  const matchLink = `${siteUrl}/?tran=${match.id}`;
   const summaryText = buildSummaryText({
     teamName: st.teamName,
     date: match.date,
@@ -108,12 +112,13 @@ export function MatchTab({
     split,
     names: new Map(split.players.map((p) => [p.memberId, name(p.memberId)])),
     teamNames: tn,
+    link: matchLink,
   });
   const unpaid = [
     ...rows.filter((r) => !r.paid).map((r) => ({ name: name(r.p.memberId), remaining: r.c!.remaining })),
     ...pendingEntries.filter((e) => !e.paid).map((e) => ({ name: name(e.memberId), remaining: e.settled != null ? e.remaining : null })),
   ];
-  const reminderText = buildReminderText(st.teamName, match.date, unpaid);
+  const reminderText = buildReminderText(st.teamName, match.date, unpaid, matchLink);
   const net = split.totalCost - split.totalSponsored;
 
   // ---- Thẻ "Của bạn" ----
