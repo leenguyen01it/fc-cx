@@ -46,6 +46,8 @@ export const members = pgTable(
     active: boolean("active").notNull().default(true),
     /** Người ngoài đội đá ké: không hiện trong điểm danh / danh sách đội. */
     guest: boolean("guest").notNull().default(false),
+    /** Họ tên chủ tài khoản ngân hàng của người này (không dấu), VD "NGUYEN VAN HUNG" – để nhận tiền theo tên người chuyển. */
+    bankHolder: text("bank_holder").notNull().default(""),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [uniqueIndex("members_code_uq").on(t.code)],

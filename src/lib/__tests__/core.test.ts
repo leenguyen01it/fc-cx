@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { computeSplit, settledTotal, sponsorThanks, summarizeTotals, teamFromAmount, type SplitItem, type SplitPlayer } from "../split";
 import { allocate } from "../ledger";
 import { buildVietQr, crc16 } from "../vietqr";
-import { parseTransferContent } from "../reconcile";
+import { matchSenderName, parseTransferContent, senderNameOf } from "../reconcile";
 import { suggestCode } from "../text";
 import { transferContent } from "../reconcile";
 import { bankAppDeeplink } from "../vietqr";
@@ -259,6 +259,41 @@ describe("vietqr", () => {
     const s = buildVietQr({ bankBin: "970422", accountNo: "01", amount: 172000, content: "TB HUNG" });
     expect(s).toContain("010212");
     expect(s).toContain("5406172000");
+  });
+});
+
+describe("matchSenderName", () => {
+  const people = [
+    { id: 1, name: "Nguyễn Văn Hùng" },
+    { id: 2, name: "Phan Văn Hùng" },
+    { id: 3, name: "Văn Hùng" },
+    { id: 4, name: "Lê Anh Tuấn" },
+    { id: 5, name: "Hải" },
+  ];
+  it("nội dung mặc định của ngân hàng có họ tên người chuyển", () => {
+    expect(matchSenderName("NGUYEN VAN HUNG chuyen tien", people)).toBe(1);
+    expect(matchSenderName("MBVCB.123.LE ANH TUAN chuyen khoan.CT tu 0123", people)).toBe(4);
+    expect(matchSenderName("FT2611 NGUYENVANHUNG CK", people)).toBe(1);
+  });
+  it("tên ngắn nằm trong tên dài không bị tính là người khác", () => {
+    expect(matchSenderName("PHAN VAN HUNG chuyen tien", people)).toBe(2);
+    expect(matchSenderName("VAN HUNG chuyen tien", people)).toBe(3);
+  });
+  it("tên dùng để nhận: ưu tiên tên chủ tài khoản; tên hiển thị 2 chữ thì không dùng", () => {
+    expect(senderNameOf({ name: "Văn Hùng", bankHolder: "NGUYEN VAN HUNG" })).toBe("NGUYEN VAN HUNG");
+    expect(senderNameOf({ name: "Văn Hùng", bankHolder: "" })).toBe("");
+    expect(senderNameOf({ name: "Nguyễn Văn Hùng", bankHolder: "" })).toBe("Nguyễn Văn Hùng");
+    const ppl = [
+      { id: 1, name: senderNameOf({ name: "Văn Hùng", bankHolder: "NGUYEN VAN HUNG" }) },
+      { id: 2, name: senderNameOf({ name: "Văn Hùng P", bankHolder: "" }) },
+    ];
+    expect(matchSenderName("PHAN VAN HUNG chuyen tien", ppl)).toBeNull();
+    expect(matchSenderName("NGUYEN VAN HUNG chuyen tien", ppl)).toBe(1);
+  });
+  it("không rõ hoặc nhiều người → null", () => {
+    expect(matchSenderName("chuyen tien", people)).toBeNull();
+    expect(matchSenderName("HAI chuyen tien", people)).toBeNull(); // tên 1 chữ không dùng
+    expect(matchSenderName("NGUYEN VAN HUNG tra LE ANH TUAN", people)).toBeNull();
   });
 });
 

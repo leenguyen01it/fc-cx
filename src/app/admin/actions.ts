@@ -97,7 +97,7 @@ export async function addMember(_: ActionState, form: FormData): Promise<ActionS
   if (p.data.code && existing.includes(p.data.code))
     return { fieldErrors: { code: `Mã ${p.data.code} đã có người dùng` } };
   const code = p.data.code || suggestCode(name, existing);
-  await db.insert(members).values({ name, code });
+  await db.insert(members).values({ name, code, bankHolder: p.data.bankHolder });
   refreshAll();
   return { ok: true, message: `Đã thêm ${name} · mã ${code}` };
 }
@@ -106,7 +106,7 @@ export async function updateMember(_: ActionState, form: FormData): Promise<Acti
   await requireAdmin();
   const p = parse(memberUpdateSchema, form);
   if (!p.success) return { fieldErrors: toFieldErrors(p.error) };
-  const { id, name, code, active } = p.data;
+  const { id, name, code, active, bankHolder } = p.data;
   const clash = await db
     .select({ id: members.id })
     .from(members)
@@ -115,7 +115,7 @@ export async function updateMember(_: ActionState, form: FormData): Promise<Acti
   // Bật "Đang hoạt động" cho khách → chuyển thành thành viên chính thức
   const res = await db
     .update(members)
-    .set(active ? { name, code, active, guest: false } : { name, code, active })
+    .set(active ? { name, code, active, bankHolder, guest: false } : { name, code, active, bankHolder })
     .where(eq(members.id, id))
     .returning({ id: members.id });
   if (!res.length) return { error: "Không tìm thấy thành viên" };

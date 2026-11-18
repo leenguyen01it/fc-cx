@@ -48,6 +48,40 @@ export function parseTransferContent(raw: string, prefix: string, codes: string[
   return { hasPrefix, code: null };
 }
 
+/**
+ * Nội dung mặc định của ngân hàng thường có họ tên người chuyển ("NGUYEN VAN HUNG chuyen tien")
+ * → tìm thành viên có họ tên đầy đủ (không dấu, ≥ 2 chữ) nằm liền trong nội dung.
+ * Tên ngắn nằm trong tên dài hơn cùng chỗ thì bỏ ("VAN HUNG" trong "NGUYEN VAN HUNG").
+ * Trả về id chỉ khi đúng 1 người khớp; nhiều người / không ai → null.
+ */
+export function matchSenderName(raw: string, people: { id: number; name: string }[]): number | null {
+  const tokens = normalizeContent(raw).split(" ").filter(Boolean);
+  const hits: { id: number; start: number; end: number }[] = [];
+  for (const p of people) {
+    const parts = normalizeContent(p.name).split(" ").filter(Boolean);
+    if (parts.length < 2) continue;
+    const compact = parts.join("");
+    for (let i = 0; i < tokens.length; i++) {
+      if (parts.every((w, k) => tokens[i + k] === w)) hits.push({ id: p.id, start: i, end: i + parts.length });
+      else if (tokens[i] === compact) hits.push({ id: p.id, start: i, end: i + 1 });
+    }
+  }
+  const kept = hits.filter(
+    (h) => !hits.some((o) => o !== h && o.start <= h.start && o.end >= h.end && o.end - o.start > h.end - h.start),
+  );
+  const ids = new Set(kept.map((h) => h.id));
+  return ids.size === 1 ? [...ids][0] : null;
+}
+
+/**
+ * Tên dùng để nhận người chuyển: họ tên chủ tài khoản nếu có;
+ * không có thì dùng tên hiển thị khi đủ 3 chữ trở lên (tên 2 chữ như "Văn Hùng" dễ nằm trong tên người khác).
+ */
+export function senderNameOf(m: { name: string; bankHolder: string }): string {
+  if (m.bankHolder.trim()) return m.bankHolder;
+  return m.name.trim().split(/\s+/).length >= 3 ? m.name : "";
+}
+
 /** Nội dung chuyển khoản in trên thẻ QR: "CX HUNG CK da bong". */
 export function transferContent(prefix: string, code: string, suffix = ""): string {
   return [prefix.trim().toUpperCase(), code, suffix.trim()].filter(Boolean).join(" ");

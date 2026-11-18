@@ -46,6 +46,15 @@ const personName = z
   .max(60, "Tên tối đa 60 ký tự")
   .regex(/^[\p{L}\p{M}\s.'-]+$/u, "Tên chỉ gồm chữ cái");
 
+/** Họ tên chủ tài khoản ngân hàng: không dấu, in hoa, ≥ 2 chữ; để trống được. */
+const bankHolder = z
+  .string()
+  .trim()
+  .transform((s) => stripDiacritics(s).toUpperCase().replace(/\s+/g, " "))
+  .pipe(z.union([z.literal(""), z.string().regex(/^[A-Z]+( [A-Z]+)+$/, "Họ tên đầy đủ như trên tài khoản, VD: NGUYEN VAN HUNG").max(60, "Tối đa 60 ký tự")]))
+  .optional()
+  .default("");
+
 export const memberCode = z
   .string()
   .trim()
@@ -70,6 +79,7 @@ export const loginSchema = z.object({
 export const memberCreateSchema = z.object({
   name: personName,
   code: z.union([z.literal(""), memberCode]).optional().default(""),
+  bankHolder,
 });
 
 export const memberUpdateSchema = z.object({
@@ -77,6 +87,7 @@ export const memberUpdateSchema = z.object({
   name: personName,
   code: memberCode,
   active: bool,
+  bankHolder,
 });
 
 export const settingsSchema = z

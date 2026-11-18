@@ -1,4 +1,4 @@
-import { Hash, UserPlus, UserRound } from "lucide-react";
+import { Hash, Landmark, UserPlus, UserRound } from "lucide-react";
 import { getMembers, getTeamState } from "@/lib/data";
 import { addMember } from "../../actions";
 import { ActionForm } from "@/components/action-form";
@@ -37,6 +37,16 @@ export default async function MembersPage() {
               className="font-mono uppercase"
             />
           </Field>
+          <Field label="Tên chủ tài khoản" name="bankHolder" optional>
+            <TextInput
+              name="bankHolder"
+              placeholder="NGUYEN VAN HUNG"
+              autoComplete="off"
+              autoCapitalize="characters"
+              icon={<Landmark />}
+              className="uppercase"
+            />
+          </Field>
         </ActionForm>
       </SheetButton>
 
@@ -47,6 +57,7 @@ export default async function MembersPage() {
           code: m.code,
           active: m.active,
           guest: m.guest,
+          bankHolder: m.bankHolder,
           balance: state.ledgers.get(m.id)?.balance ?? 0,
         }))}
       />

@@ -77,7 +77,7 @@ export function PayDialog({
               alt={`VietQR chuyển ${formatVnd(amount)}`}
               className="mx-auto max-w-72"
             />
-            <SaveQrButton card={{ teamName, name, content, ...bank, amount }} />
+            <SaveQrButton card={{ teamName, name, content, ...bank }} />
             {cash && (
               <ConfirmButton
                 className={cx(btn.ghost, "mt-2 w-full border-paid/40 text-paid")}

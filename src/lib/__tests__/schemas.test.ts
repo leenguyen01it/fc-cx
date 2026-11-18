@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   manualPaymentSchema,
   matchSchema,
+  memberUpdateSchema,
   memberCreateSchema,
   sepaySchema,
   settingsSchema,
@@ -14,7 +15,7 @@ const errs = (r: { success: boolean; error?: unknown }) =>
 
 describe("memberCreateSchema", () => {
   it("chuẩn hoá mã: bỏ dấu, in hoa", () => {
-    expect(memberCreateSchema.parse({ name: "Nguyễn Văn Hùng", code: "hùng" })).toEqual({ name: "Nguyễn Văn Hùng", code: "HUNG" });
+    expect(memberCreateSchema.parse({ name: "Nguyễn Văn Hùng", code: "hùng" })).toEqual({ name: "Nguyễn Văn Hùng", code: "HUNG", bankHolder: "" });
   });
   it("mã để trống thì hợp lệ (server tự tạo)", () => {
     expect(memberCreateSchema.parse({ name: "Nam", code: "" }).code).toBe("");
@@ -54,6 +55,14 @@ describe("settingsSchema", () => {
     const e = errs(settingsSchema.safeParse({ ...base, bankBin: "123", accountNo: "12ab", accountName: "A B" }));
     expect(e).toHaveProperty("bankBin");
     expect(e).toHaveProperty("accountNo");
+  });
+});
+
+describe("tên chủ tài khoản của thành viên", () => {
+  it("bỏ dấu, in hoa, gộp khoảng trắng; để trống được; cần ít nhất 2 chữ", () => {
+    expect(memberUpdateSchema.parse({ id: "1", name: "Văn Hùng", code: "HUNG", active: "on", bankHolder: " Nguyễn  văn hùng " }).bankHolder).toBe("NGUYEN VAN HUNG");
+    expect(memberUpdateSchema.parse({ id: "1", name: "Văn Hùng", code: "HUNG", active: "on" }).bankHolder).toBe("");
+    expect(errs(memberUpdateSchema.safeParse({ id: "1", name: "Văn Hùng", code: "HUNG", active: "on", bankHolder: "HUNG" }))).toHaveProperty("bankHolder");
   });
 });
 

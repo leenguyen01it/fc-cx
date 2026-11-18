@@ -12,6 +12,7 @@ export interface MemberItem {
   code: string;
   active: boolean;
   guest: boolean;
+  bankHolder: string;
   balance: number;
 }
 
@@ -53,7 +54,7 @@ export function MemberList({ members }: { members: MemberItem[] }) {
             ) : (
               <ul className="divide-y divide-line">
                 {items.map((m) => (
-                  <MemberRow key={m.id} member={{ id: m.id, name: m.name, code: m.code, active: m.active }} balance={m.balance} />
+                  <MemberRow key={m.id} member={{ id: m.id, name: m.name, code: m.code, active: m.active, bankHolder: m.bankHolder }} balance={m.balance} />
                 ))}
               </ul>
             )}

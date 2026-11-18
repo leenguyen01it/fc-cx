@@ -2,7 +2,7 @@ import "server-only";
 import { db, members, transactions } from "@/db";
 import { applyDeclare, findPaymentTarget } from "./payments";
 import { getSettings } from "./data";
-import { parseTransferContent } from "./reconcile";
+import { matchSenderName, parseTransferContent, senderNameOf } from "./reconcile";
 
 export interface IncomingTransfer {
   externalId: string;
@@ -12,7 +12,7 @@ export interface IncomingTransfer {
 }
 
 export type IngestResult =
-  | { status: "matched"; code: string }
+  | { status: "matched"; code: string; by?: "name" }
   | { status: "pending" }
   | { status: "skipped"; reason: string }
   | { status: "duplicate" };
@@ -22,23 +22,40 @@ export type IngestResult =
  *  - có mã đội + đúng mã thành viên → matched (tự trừ nợ)
  *  - có mã đội nhưng không rõ ai     → pending (admin chọn tên)
  *  - không có mã đội                 → pending nếu là tài khoản riêng của đội, ngược lại bỏ qua
+ *  - không rõ mã nhưng nội dung có họ tên đúng 1 thành viên VÀ số tiền khớp đúng 1 khoản người đó
+ *    đang nợ (VD chuyển cho người nhận đã lưu, ngân hàng tự ghi "NGUYEN VAN HUNG chuyen tien") → matched
  */
 export async function ingestTransfer(t: IncomingTransfer): Promise<IngestResult> {
   if (!(t.amount > 0)) return { status: "skipped", reason: "not incoming" };
   const st = await getSettings();
-  const mems = await db.select({ id: members.id, code: members.code }).from(members);
+  const mems = await db
+    .select({ id: members.id, code: members.code, name: members.name, bankHolder: members.bankHolder })
+    .from(members);
   const parsed = parseTransferContent(t.content, st.prefix, mems.map((m) => m.code));
 
   if (!parsed.hasPrefix && !st.dedicatedAccount) return { status: "skipped", reason: "no team prefix" };
 
-  const member = parsed.code ? mems.find((m) => m.code === parsed.code) : undefined;
-  const target = member ? await findPaymentTarget(member.id, Math.round(t.amount)) : null;
+  const amount = Math.round(t.amount);
+  let member = parsed.code ? mems.find((m) => m.code === parsed.code) : undefined;
+  let target = member ? await findPaymentTarget(member.id, amount) : null;
+  let byName = false;
+  if (!member) {
+    // Theo tên chỉ khi số tiền khớp đúng một khoản đang nợ – tránh gán nhầm
+    const id = matchSenderName(t.content, mems.map((m) => ({ id: m.id, name: senderNameOf(m) })));
+    const named = id != null ? await findPaymentTarget(id, amount) : null;
+    if (named) {
+      member = mems.find((m) => m.id === id);
+      target = named;
+      byName = true;
+    }
+  }
   const inserted = await db
     .insert(transactions)
     .values({
       externalId: t.externalId,
-      amount: Math.round(t.amount),
+      amount,
       content: t.content.slice(0, 500),
+      note: byName ? `Nhận theo tên · ${t.content}`.slice(0, 200) : "",
       occurredAt: t.occurredAt,
       memberId: member?.id ?? null,
       matchId: target?.matchId ?? null,
@@ -50,5 +67,5 @@ export async function ingestTransfer(t: IncomingTransfer): Promise<IngestResult>
 
   if (inserted.length === 0) return { status: "duplicate" };
   if (member) await applyDeclare(member.id, target);
-  return member ? { status: "matched", code: member.code } : { status: "pending" };
+  return member ? { status: "matched", code: member.code, ...(byName ? { by: "name" as const } : {}) } : { status: "pending" };
 }

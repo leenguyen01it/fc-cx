@@ -1,7 +1,7 @@
 "use client";
 
 import { buildVietQr } from "@/lib/vietqr";
-import { formatVnd, stripDiacritics } from "@/lib/text";
+import { stripDiacritics } from "@/lib/text";
 import { renderVietQrPanel, saveCanvasImage } from "./qr-image";
 
 export interface MemberCardInput {
@@ -13,17 +13,14 @@ export interface MemberCardInput {
   bankName: string;
   accountNo: string;
   accountName: string;
-  /** Có số tiền → QR của một lần trả: quét từ ảnh là app điền đủ STK, số tiền, nội dung. */
-  amount?: number;
 }
 
 /**
- * Thẻ QR của thành viên. Không có số tiền: thẻ cố định dùng cho mọi trận (tự nhập số tiền).
- * Có số tiền: QR của đúng khoản đang trả.
+ * Thẻ QR cố định của thành viên – KHÔNG kèm số tiền, dùng cho mọi trận.
+ * Mỗi lần trả chỉ cần mở ảnh này trong app ngân hàng và nhập số tiền.
  */
 export async function renderMemberCard(p: MemberCardInput): Promise<HTMLCanvasElement> {
-  const amount = p.amount && p.amount > 0 ? Math.round(p.amount) : undefined;
-  const payload = buildVietQr({ bankBin: p.bankBin, accountNo: p.accountNo, content: p.content, amount });
+  const payload = buildVietQr({ bankBin: p.bankBin, accountNo: p.accountNo, content: p.content });
   const panel = await renderVietQrPanel({
     payload,
     bankBin: p.bankBin,
@@ -34,8 +31,7 @@ export async function renderMemberCard(p: MemberCardInput): Promise<HTMLCanvasEl
     rounded: true,
   });
   const W = 720;
-  const top = amount ? 250 : 180;
-  const H = top + panel.height + 50;
+  const H = 180 + panel.height + 50;
   const c = document.createElement("canvas");
   c.width = W;
   c.height = H;
@@ -53,18 +49,13 @@ export async function renderMemberCard(p: MemberCardInput): Promise<HTMLCanvasEl
   g.fillText(p.teamName.toUpperCase(), W / 2, 76);
   g.font = `800 50px ${font}`;
   g.fillText(p.name, W / 2, 140);
-  if (amount) {
-    g.font = `900 56px ${font}`;
-    g.fillText(formatVnd(amount), W / 2, 215);
-  }
 
-  g.drawImage(panel, (W - panel.width) / 2, top);
+  g.drawImage(panel, (W - panel.width) / 2, 180);
 
   return c;
 }
 
 export async function saveMemberCard(p: MemberCardInput) {
   const canvas = await renderMemberCard(p);
-  const slug = stripDiacritics(p.name).toLowerCase().replace(/[^a-z0-9]+/g, "-");
-  return saveCanvasImage(canvas, p.amount ? `qr-${slug}-${Math.round(p.amount)}.png` : `the-qr-${slug}.png`);
+  return saveCanvasImage(canvas, `the-qr-${stripDiacritics(p.name).toLowerCase().replace(/[^a-z0-9]+/g, "-")}.png`);
 }
