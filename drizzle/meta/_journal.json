@@ -15,6 +15,13 @@
       "when": 1794967784242,
       "tag": "0001_tired_swordsman",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794974048193,
+      "tag": "0002_open_argent",
+      "breakpoints": true
     }
   ]
 }

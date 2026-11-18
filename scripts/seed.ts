@@ -28,7 +28,7 @@ const NAMES = [
 ];
 
 type Item = Omit<SplitItem, "id">;
-const base = { loserPct: 70, bearer: "loser", includeNonEaters: true, drawMode: "half", sponsorAmount: 0, sponsorName: "" } as const;
+const base = { loserPct: 70, bearer: "loser", includeNonEaters: true, drawMode: "half", sponsorAmount: 0, sponsorName: "", sponsorMemberId: null, sponsorCash: false } as const;
 const san = (amount: number, loserPct = 70): Item => ({ ...base, name: "Tiền sân", amount, rule: "ratio", loserPct });
 const an = (amount: number, sponsor?: [string, number]): Item => ({
   ...base,

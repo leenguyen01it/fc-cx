@@ -168,7 +168,17 @@ export const costItemSchema = z.object({
   eatersOnly: z.boolean().default(false),
   sponsorAmount: money(),
   sponsorName: z.string().trim().max(60, "Tối đa 60 ký tự"),
-});
+  /** Thành viên trong trận ủng hộ (null = người ngoài, chỉ ghi tên). */
+  sponsorMemberId: z.number().int().positive().nullable().default(null),
+  /** Thành viên đưa tiền mặt → không cộng tiền ủng hộ vào khoản chuyển. */
+  sponsorCash: z.boolean().default(false),
+})
+  // Không ủng hộ thì bỏ thông tin người ủng hộ; người ngoài thì không có lựa chọn tiền mặt
+  .transform((it) =>
+    it.sponsorAmount > 0
+      ? { ...it, sponsorCash: it.sponsorMemberId != null && it.sponsorCash }
+      : { ...it, sponsorName: "", sponsorMemberId: null, sponsorCash: false },
+  );
 
 /**
  * "Lưu" (đang điểm danh, chưa đá): chỉ kiểm tra kiểu dữ liệu & giới hạn – được để trống đội hình, chi phí, tỷ số.
@@ -253,8 +263,10 @@ export const matchSchema = z
       if (it.amount <= 0) ctx.addIssue({ code: "custom", path: ["items", i, "amount"], message: "Nhập số tiền" });
       if (it.sponsorAmount > it.amount)
         ctx.addIssue({ code: "custom", path: ["items", i, "sponsorAmount"], message: "Ủng hộ không vượt quá khoản chi" });
-      if (it.sponsorAmount > 0 && !it.sponsorName.trim())
-        ctx.addIssue({ code: "custom", path: ["items", i, "sponsorName"], message: "Ghi tên người ủng hộ" });
+      if (it.sponsorAmount > 0 && it.sponsorMemberId == null && !it.sponsorName.trim())
+        ctx.addIssue({ code: "custom", path: ["items", i, "sponsorName"], message: "Chọn hoặc ghi tên người ủng hộ" });
+      if (it.sponsorAmount > 0 && it.sponsorMemberId != null && !m.players.some((p) => p.memberId === it.sponsorMemberId))
+        ctx.addIssue({ code: "custom", path: ["items", i, "sponsorName"], message: "Người ủng hộ không có trong trận" });
     });
     // Tiền ăn chỉ bổ đầu người đi ăn → không ai ăn thì khoản đó không thu được của ai
     if (!m.players.some((p) => p.ate))

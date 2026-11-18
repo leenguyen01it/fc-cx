@@ -176,15 +176,25 @@ export async function saveMatch(id: number, input: MatchInput): Promise<ActionSt
   const before = await getMatchBundle(id);
   if (!before) return { error: "Không tìm thấy trận (có thể đã bị xoá)" };
 
-  if (v.players.length) {
+  const sponsorIds = v.items.flatMap((i) => (i.sponsorMemberId != null ? [i.sponsorMemberId] : []));
+  const lookupIds = [...new Set([...v.players.map((x) => x.memberId), ...sponsorIds])];
+  const nameById = new Map<number, string>();
+  if (lookupIds.length) {
     const found = await db
-      .select({ id: members.id })
+      .select({ id: members.id, name: members.name })
       .from(members)
-      .where(inArray(members.id, v.players.map((x) => x.memberId)));
-    if (found.length !== v.players.length) return { error: "Có thành viên không còn tồn tại, tải lại trang" };
+      .where(inArray(members.id, lookupIds));
+    for (const m of found) nameById.set(m.id, m.name);
+    if (lookupIds.some((mid) => !nameById.has(mid))) return { error: "Có thành viên không còn tồn tại, tải lại trang" };
   }
 
-  const items = v.items.map((i, idx) => ({ ...i, matchId: id, sort: idx }));
+  // Người ủng hộ là thành viên: lưu kèm tên để hiện lời cảm ơn
+  const items = v.items.map((i, idx) => ({
+    ...i,
+    sponsorName: i.sponsorMemberId != null ? nameById.get(i.sponsorMemberId)! : i.sponsorName,
+    matchId: id,
+    sort: idx,
+  }));
   const players = v.players.map((x) => ({ ...x, matchId: id }));
 
   // Ghi lại thay đổi sau khi đã công bố để mọi người thấy, tránh hiểu lầm.
@@ -201,6 +211,11 @@ export async function saveMatch(id: number, input: MatchInput): Promise<ActionSt
         if (old.amount !== it.amount) changes.push(`${it.name} ${formatK(old.amount)} → ${formatK(it.amount)}`);
         if (old.sponsorAmount !== it.sponsorAmount)
           changes.push(`ủng hộ ${it.name.toLowerCase()} ${formatK(old.sponsorAmount)} → ${formatK(it.sponsorAmount)}`);
+        else if (
+          it.sponsorAmount > 0 &&
+          (old.sponsorName !== it.sponsorName || old.sponsorMemberId !== it.sponsorMemberId || old.sponsorCash !== it.sponsorCash)
+        )
+          changes.push(`người ủng hộ ${it.name.toLowerCase()}: ${it.sponsorName}${it.sponsorMemberId && !it.sponsorCash ? " (chuyển khoản)" : it.sponsorMemberId ? " (tiền mặt)" : ""}`);
         if (old.rule !== it.rule || old.loserPct !== it.loserPct || old.bearer !== it.bearer)
           changes.push(`cách chia ${it.name.toLowerCase()}`);
       }

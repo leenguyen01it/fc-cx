@@ -70,6 +70,8 @@ export default async function EditMatchPage(props: PageProps<"/admin/tran/[id]">
             eatersOnly: i.eatersOnly,
             sponsorAmount: i.sponsorAmount,
             sponsorName: i.sponsorName,
+            sponsorMemberId: i.sponsorMemberId,
+            sponsorCash: i.sponsorCash,
           })),
         }}
       />

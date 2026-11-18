@@ -123,8 +123,12 @@ export const costItems = pgTable("cost_items", {
   drawMode: text("draw_mode", { enum: ["half", "all"] }).notNull().default("half"),
   /** Số tiền được ủng hộ, trừ vào khoản này trước khi chia. */
   sponsorAmount: integer("sponsor_amount").notNull().default(0),
-  /** Ai ủng hộ, ví dụ "Anh Tuấn". */
+  /** Ai ủng hộ, ví dụ "Anh Tuấn" (thành viên thì lưu kèm tên lúc lưu trận). */
   sponsorName: text("sponsor_name").notNull().default(""),
+  /** Người ủng hộ là thành viên trong trận: tiền ủng hộ cộng vào số tiền họ chuyển. null = người ngoài. */
+  sponsorMemberId: integer("sponsor_member_id").references(() => members.id, { onDelete: "set null" }),
+  /** Thành viên ủng hộ bằng tiền mặt → không cộng vào tiền chuyển. */
+  sponsorCash: boolean("sponsor_cash").notNull().default(false),
   sort: integer("sort").notNull().default(0),
 });
 

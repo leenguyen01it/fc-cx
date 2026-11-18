@@ -104,6 +104,39 @@ describe("computeSplit", () => {
     expect(sponsorThanks(r)).toEqual([{ name: "Anh Tuấn", amount: 300_000, items: ["Tiền ăn"] }]);
   });
 
+  it("thành viên ủng hộ: tiền ủng hộ cộng vào khoản chuyển của người đó", () => {
+    const sponsored = items.map((i) =>
+      i.name === "Tiền ăn" ? { ...i, sponsorAmount: 300_000, sponsorName: "P1", sponsorMemberId: 1 } : i,
+    );
+    const r = computeSplit(players, sponsored, 2, 4);
+    expect(by(r, 1).total).toBe(43_000 + 70_000 + 72_000 + 300_000);
+    expect(by(r, 1).lines.map((l) => l.name)).toEqual(["Tiền sân", "Tiền ăn", "Ủng hộ tiền ăn", "Bia + gà"]);
+    expect(by(r, 1).lines[2]).toEqual({ itemId: "Tiền ăn", name: "Ủng hộ tiền ăn", amount: 300_000, sponsor: true });
+    expect(by(r, 2).total).toBe(43_000 + 70_000 + 72_000);
+    expect(r.items[1].sponsorDue).toBe(300_000);
+    // Mức chung của đội không bị người ủng hộ kéo lệch
+    const t = summarizeTotals(r);
+    expect(t[0]).toMatchObject({ label: "Đội thua", common: 185_000 });
+    expect(t[0].exceptions).toEqual([{ memberId: 1, total: 485_000, reason: "ủng hộ" }]);
+  });
+
+  it("thành viên ủng hộ tiền mặt: chỉ trừ vào khoản chi, không cộng vào tiền chuyển", () => {
+    const sponsored = items.map((i) =>
+      i.name === "Tiền ăn" ? { ...i, sponsorAmount: 300_000, sponsorMemberId: 1, sponsorCash: true } : i,
+    );
+    const r = computeSplit(players, sponsored, 2, 4);
+    expect(by(r, 1).total).toBe(43_000 + 70_000 + 72_000);
+    expect(r.items[1].sponsorDue).toBe(0);
+  });
+
+  it("người chưa chọn đội ủng hộ: cả 2 mức đều cộng tiền ủng hộ", () => {
+    const ps = players.map((p) => (p.memberId === 1 ? { ...p, team: null, pending: true } : p));
+    const sponsored = items.map((i) => (i.name === "Tiền ăn" ? { ...i, sponsorAmount: 300_000, sponsorMemberId: 1 } : i));
+    const plain = computeSplit(ps, items.map((i) => (i.name === "Tiền ăn" ? { ...i, sponsorAmount: 300_000 } : i)), 2, 4);
+    const r = computeSplit(ps, sponsored, 2, 4);
+    expect(by(r, 1).choices).toEqual({ A: by(plain, 1).choices!.A + 300_000, B: by(plain, 1).choices!.B + 300_000 });
+  });
+
   it("ủng hộ nhiều hơn khoản chi thì khoản đó về 0, không âm", () => {
     const r = computeSplit(players, [item({ name: "Nước", amount: 100_000, rule: "all", sponsorAmount: 500_000 })], 1, 0);
     expect(by(r, 1).total).toBe(0);

@@ -32,6 +32,19 @@ export interface SplitItem {
   /** Tiền người khác ủng hộ, trừ vào khoản này trước khi chia. */
   sponsorAmount?: number;
   sponsorName?: string;
+  /** Thành viên trong trận ủng hộ: tiền ủng hộ cộng vào số tiền họ phải chuyển (trừ khi đưa tiền mặt). */
+  sponsorMemberId?: number | null;
+  sponsorCash?: boolean;
+}
+
+/** Tiền ủng hộ thực tế của một khoản (không vượt quá khoản chi). */
+export function sponsoredAmount(item: Pick<SplitItem, "amount" | "sponsorAmount">): number {
+  return Math.max(0, Math.round(item.amount)) - netAmount(item);
+}
+
+/** Tiền ủng hộ được cộng vào khoản chuyển của một thành viên. */
+export function sponsorTransfer(item: Pick<SplitItem, "amount" | "sponsorAmount" | "sponsorMemberId" | "sponsorCash">): number {
+  return item.sponsorMemberId != null && !item.sponsorCash ? sponsoredAmount(item) : 0;
 }
 
 /**
@@ -52,6 +65,8 @@ export interface ChargeLine {
   itemId: SplitItem["id"];
   name: string;
   amount: number;
+  /** Dòng tiền ủng hộ (không phải phần chia). */
+  sponsor?: boolean;
 }
 
 export interface PlayerCharge {
@@ -71,6 +86,8 @@ export interface ItemBreakdown {
   /** Các nhóm người chịu và mức mỗi người, ví dụ "Đội thua · 7 người · 43k". */
   groups: { label: string; count: number; perPerson: number }[];
   collected: number;
+  /** Tiền ủng hộ cộng vào khoản chuyển của người ủng hộ (0 = người ngoài / tiền mặt). */
+  sponsorDue: number;
 }
 
 export interface SplitResult {
@@ -201,10 +218,23 @@ export function computeSplit(
   };
 
   for (const item of items) {
-    const bd: ItemBreakdown = { item, groups: [], collected: 0 };
+    const bd: ItemBreakdown = { item, groups: [], collected: 0, sponsorDue: 0 };
     breakdowns.push(bd);
+    // Thành viên ủng hộ chuyển khoản: cộng tiền ủng hộ vào khoản của họ (sau phần chia của khoản này)
+    const addSponsor = () => {
+      const due = sponsorTransfer(item);
+      const c = due > 0 ? charges.get(item.sponsorMemberId!) : undefined;
+      if (!c) return;
+      c.lines.push({ itemId: item.id, name: `Ủng hộ ${item.name.toLowerCase()}`, amount: due, sponsor: true });
+      c.total += due;
+      bd.sponsorDue = due;
+      bd.collected += due;
+    };
     const amount = netAmount(item);
-    if (amount === 0 || players.length === 0) continue;
+    if (amount === 0 || players.length === 0) {
+      addSponsor();
+      continue;
+    }
 
     switch (item.rule) {
       case "all":
@@ -269,6 +299,7 @@ export function computeSplit(
         break;
       }
     }
+    addSponsor();
   }
 
   const result = [...charges.values()];
@@ -317,16 +348,31 @@ export interface TeamTotals {
   exceptions: { memberId: number; total: number; reason: string }[];
 }
 
+const isSponsor = (p: PlayerCharge) => p.lines.some((l) => l.sponsor);
+/** Phần chia của một người, không tính tiền ủng hộ. */
+const shareOf = (p: PlayerCharge) => p.lines.reduce((s, l) => s + (l.sponsor ? 0 : l.amount), 0);
+
+/** Mức chung = phần chia gặp nhiều nhất (bỏ tiền ủng hộ ra để người ủng hộ không kéo lệch). */
+function commonOf(ps: PlayerCharge[]) {
+  const freq = new Map<number, number>();
+  for (const p of ps) freq.set(shareOf(p), (freq.get(shareOf(p)) ?? 0) + 1);
+  const common = [...freq.entries()].sort((a, b) => b[1] - a[1] || b[0] - a[0])[0][0];
+  const sample = ps.find((p) => shareOf(p) === common)!;
+  return {
+    common,
+    commonLines: sample.lines.filter((l) => !l.sponsor),
+    commonCount: ps.filter((p) => p.total === common).length,
+    sample,
+  };
+}
+
 /** Tóm tắt "mỗi người phải trả" theo đội, tách người có mức khác (không ăn...). */
 export function summarizeTotals(split: SplitResult, names: TeamNames = DEFAULT_TEAM_NAMES): TeamTotals[] {
   const out: TeamTotals[] = [];
   for (const team of ["A", "B"] as Team[]) {
     const ps = split.players.filter((p) => p.team === team && !p.pending);
     if (ps.length === 0) continue;
-    const freq = new Map<number, number>();
-    for (const p of ps) freq.set(p.total, (freq.get(p.total) ?? 0) + 1);
-    const common = [...freq.entries()].sort((a, b) => b[1] - a[1] || b[0] - a[0])[0][0];
-    const sample = ps.find((p) => p.total === common)!;
+    const { common, commonLines, commonCount, sample } = commonOf(ps);
     const role =
       split.outcome === "draw"
         ? "draw"
@@ -340,14 +386,16 @@ export function summarizeTotals(split: SplitResult, names: TeamNames = DEFAULT_T
       role,
       label: split.teamless ? "Người đá" : role === "winner" ? "Đội thắng" : role === "loser" ? "Đội thua" : teamName(team, names),
       common,
-      commonLines: sample.lines,
-      commonCount: freq.get(common)!,
+      commonLines,
+      commonCount,
       exceptions: ps
         .filter((p) => p.total !== common)
         .map((p) => ({
           memberId: p.memberId,
           total: p.total,
-          reason: p.ate === sample.ate ? "" : p.ate ? "có ăn" : "không ăn",
+          reason: [p.ate === sample.ate ? "" : p.ate ? "có ăn" : "không ăn", isSponsor(p) ? "ủng hộ" : ""]
+            .filter(Boolean)
+            .join(", "),
         })),
     });
   }
@@ -355,17 +403,17 @@ export function summarizeTotals(split: SplitResult, names: TeamNames = DEFAULT_T
   out.sort((a, b) => (a.role === "loser" ? -1 : b.role === "loser" ? 1 : 0));
   const eatOnly = split.players.filter((p) => !p.team && !p.pending);
   if (eatOnly.length) {
-    const freq = new Map<number, number>();
-    for (const p of eatOnly) freq.set(p.total, (freq.get(p.total) ?? 0) + 1);
-    const common = [...freq.entries()].sort((a, b) => b[1] - a[1] || b[0] - a[0])[0][0];
+    const { common, commonLines, commonCount } = commonOf(eatOnly);
     out.push({
       team: null,
       role: null,
       label: "Chỉ ăn",
       common,
-      commonLines: eatOnly.find((p) => p.total === common)!.lines,
-      commonCount: freq.get(common)!,
-      exceptions: eatOnly.filter((p) => p.total !== common).map((p) => ({ memberId: p.memberId, total: p.total, reason: "" })),
+      commonLines,
+      commonCount,
+      exceptions: eatOnly
+        .filter((p) => p.total !== common)
+        .map((p) => ({ memberId: p.memberId, total: p.total, reason: isSponsor(p) ? "ủng hộ" : "" })),
     });
   }
   return out;
@@ -375,7 +423,7 @@ export function summarizeTotals(split: SplitResult, names: TeamNames = DEFAULT_T
 export function sponsorThanks(split: SplitResult) {
   const by = new Map<string, { name: string; amount: number; items: string[] }>();
   for (const b of split.items) {
-    const amt = Math.max(0, Math.round(b.item.amount)) - netAmount(b.item);
+    const amt = sponsoredAmount(b.item);
     if (amt <= 0) continue;
     const name = b.item.sponsorName?.trim() || "Mạnh thường quân";
     const e = by.get(name) ?? { name, amount: 0, items: [] };

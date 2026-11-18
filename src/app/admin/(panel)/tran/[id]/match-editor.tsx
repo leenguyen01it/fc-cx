@@ -74,6 +74,8 @@ export interface ItemData {
   eatersOnly: boolean;
   sponsorAmount: number;
   sponsorName: string;
+  sponsorMemberId: number | null;
+  sponsorCash: boolean;
 }
 type Item = ItemData & { key: string };
 /** team null = chỉ ăn */
@@ -286,6 +288,8 @@ export function MatchEditor({
         eatersOnly: false,
         sponsorAmount: 0,
         sponsorName: "",
+        sponsorMemberId: null,
+        sponsorCash: false,
       },
     ]);
   }
@@ -696,7 +700,12 @@ export function MatchEditor({
                 <div className="flex items-center gap-2 pl-11">
                   <p className="min-w-0 flex-1 text-xs text-muted">
                     {ruleDescription(it)}
-                    {it.sponsorAmount > 0 && <span className="text-brand"> · ủng hộ {formatK(it.sponsorAmount)}</span>}
+                    {it.sponsorAmount > 0 && (
+                      <span className="text-brand">
+                        {" "}
+                        · {it.sponsorMemberId != null ? nameOf(it.sponsorMemberId) : it.sponsorName || "ủng hộ"} {formatK(it.sponsorAmount)}
+                      </span>
+                    )}
                   </p>
                   <button
                     type="button"
@@ -793,6 +802,7 @@ export function MatchEditor({
 
                 <SponsorBlock
                   item={it}
+                  people={players.map((p) => ({ id: p.memberId, name: nameOf(p.memberId) }))}
                   errors={{ amount: e("sponsorAmount"), name: e("sponsorName") }}
                   onChange={(patch) => updateItem(idx, patch)}
                 />
@@ -1121,14 +1131,21 @@ export function MatchEditor({
 
 function SponsorBlock({
   item,
+  people,
   errors,
   onChange,
 }: {
   item: Item;
+  /** Người có trong trận (đá hoặc ăn). */
+  people: { id: number; name: string }[];
   errors: { amount?: string; name?: string };
   onChange: (p: Partial<Item>) => void;
 }) {
-  const [open, setOpen] = useState(item.sponsorAmount > 0 || item.sponsorName !== "");
+  const [open, setOpen] = useState(item.sponsorAmount > 0 || item.sponsorName !== "" || item.sponsorMemberId != null);
+  // Mặc định là người trong đội; trận cũ chỉ có tên → người ngoài
+  const [who, setWho] = useState<"member" | "outside">(
+    item.sponsorMemberId == null && item.sponsorName !== "" ? "outside" : "member",
+  );
   if (!open && !errors.amount && !errors.name)
     return (
       <button
@@ -1149,7 +1166,8 @@ function SponsorBlock({
         <button
           type="button"
           onClick={() => {
-            onChange({ sponsorAmount: 0, sponsorName: "" });
+            onChange({ sponsorAmount: 0, sponsorName: "", sponsorMemberId: null, sponsorCash: false });
+            setWho("member");
             setOpen(false);
           }}
           className="flex h-8 items-center gap-1 rounded-full px-2 text-xs font-semibold text-muted active:bg-card"
@@ -1157,19 +1175,58 @@ function SponsorBlock({
           <X className="size-3.5" /> Bỏ
         </button>
       </div>
+      <Segmented
+        ariaLabel="Người ủng hộ"
+        value={who}
+        onChange={(v) => {
+          setWho(v);
+          onChange({ sponsorMemberId: null, sponsorCash: false, sponsorName: "" });
+        }}
+        options={[
+          { value: "member", label: "Người trong trận" },
+          { value: "outside", label: "Người ngoài" },
+        ]}
+      />
       <Field label="Người ủng hộ" error={errors.name}>
-        <TextInput
-          value={item.sponsorName}
-          placeholder="VD: Anh Tuấn"
-          maxLength={60}
-          icon={<UserRound />}
-          invalid={!!errors.name}
-          onChange={(e) => onChange({ sponsorName: e.target.value })}
-        />
+        {who === "member" ? (
+          <Select
+            value={item.sponsorMemberId != null ? String(item.sponsorMemberId) : ""}
+            title="Người ủng hộ"
+            placeholder={people.length ? "Chọn người" : "Chưa có ai trong trận"}
+            icon={<UserRound />}
+            searchable
+            invalid={!!errors.name}
+            options={people.map((p) => ({ value: String(p.id), label: p.name }))}
+            onChange={(v) => {
+              const p = people.find((x) => String(x.id) === v);
+              onChange({ sponsorMemberId: p ? p.id : null, sponsorName: p?.name ?? "" });
+            }}
+          />
+        ) : (
+          <TextInput
+            value={item.sponsorName}
+            placeholder="VD: Anh Tuấn"
+            maxLength={60}
+            icon={<UserRound />}
+            invalid={!!errors.name}
+            onChange={(e) => onChange({ sponsorName: e.target.value })}
+          />
+        )}
       </Field>
       <Field label="Số tiền ủng hộ" error={errors.amount}>
         <MoneyInput value={item.sponsorAmount} invalid={!!errors.amount} onChange={(v) => onChange({ sponsorAmount: v })} />
       </Field>
+      {who === "member" && (
+        <Segmented
+          ariaLabel="Cách đưa tiền ủng hộ"
+          value={item.sponsorCash ? "cash" : "transfer"}
+          onChange={(v) => onChange({ sponsorCash: v === "cash" })}
+          options={[
+            { value: "transfer", label: "Cộng vào tiền chuyển" },
+            { value: "cash", label: "Tiền mặt" },
+          ]}
+        />
+      )}
       <p className="tabular flex justify-between rounded-xl bg-card px-3 py-2 text-sm">
         <span className="text-muted">Còn chia</span>
         <span>

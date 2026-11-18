@@ -94,6 +94,16 @@ describe("matchSchema", () => {
     expect(matchSchema.safeParse({ ...ok, players: noEat, items: [item] }).success).toBe(true);
     expect(matchSchema.safeParse({ ...ok, items: [item, food] }).success).toBe(true);
   });
+  it("người ủng hộ là thành viên: phải có trong trận; không ủng hộ thì bỏ thông tin người ủng hộ", () => {
+    const food = { ...item, name: "Tiền ăn", amount: 300000, rule: "eaters" as const, sponsorAmount: 100000 };
+    expect(matchSchema.safeParse({ ...ok, items: [item, { ...food, sponsorMemberId: 2 }] }).success).toBe(true);
+    expect(errs(matchSchema.safeParse({ ...ok, items: [item, { ...food, sponsorMemberId: 9 }] }))).toHaveProperty("items.1.sponsorName");
+    expect(errs(matchSchema.safeParse({ ...ok, items: [item, food] }))).toHaveProperty("items.1.sponsorName");
+    const cleared = matchSchema.parse({ ...ok, items: [{ ...item, sponsorMemberId: 2, sponsorCash: true, sponsorName: "X" }] });
+    expect(cleared.items[0]).toMatchObject({ sponsorMemberId: null, sponsorCash: false, sponsorName: "" });
+    const outside = matchSchema.parse({ ...ok, items: [item, { ...food, sponsorName: "Anh Tuấn", sponsorCash: true }] });
+    expect(outside.items[1].sponsorCash).toBe(false);
+  });
   it("ngày không tồn tại", () => {
     expect(errs(matchSchema.safeParse({ ...ok, date: "2026-02-30" }))).toHaveProperty("date");
   });

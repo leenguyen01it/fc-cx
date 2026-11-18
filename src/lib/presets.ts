@@ -9,6 +9,8 @@ const base = {
   drawMode: "half",
   sponsorAmount: 0,
   sponsorName: "",
+  sponsorMemberId: null,
+  sponsorCash: false,
   eatersOnly: false,
 } as const;
 

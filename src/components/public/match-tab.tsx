@@ -62,7 +62,10 @@ export function MatchTab({
     .map((p) => ({ p, c: state.chargeOf(match.id, p.memberId) }))
     .filter((x) => x.c);
   // Tổng phải thu cố định ngay khi công bố (số người mỗi đội đã biết), kể cả khi còn người chưa chọn đội
-  const totalDue = split.items.reduce((s, b) => s + b.groups.reduce((t, g) => t + g.perPerson * g.count, 0), 0);
+  const totalDue = split.items.reduce(
+    (s, b) => s + b.sponsorDue + b.groups.reduce((t, g) => t + g.perPerson * g.count, 0),
+    0,
+  );
   const collected =
     rows.reduce((s, r) => s + (r.c?.paid ?? 0), 0) + pendingSettled.reduce((s, x) => s + x.c!.paid, 0);
   const paidCount = rows.filter((r) => r.paid).length + pendingSettled.filter((x) => x.c!.status === "paid").length;
@@ -378,6 +381,11 @@ export function MatchTab({
                           <span className="flex items-center gap-1.5">
                             <Gift className="size-3.5" />
                             {b.item.sponsorName || "Ủng hộ"}
+                            {b.item.sponsorMemberId != null && (
+                              <span className="text-xs font-medium text-muted">
+                                · {b.item.sponsorCash ? "tiền mặt" : "chuyển cùng tiền trận"}
+                              </span>
+                            )}
                           </span>
                           <span className="font-semibold">−{formatVnd(sponsored)}</span>
                         </p>
