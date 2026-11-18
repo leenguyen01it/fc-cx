@@ -2,7 +2,7 @@ import "server-only";
 import { db, members, transactions } from "@/db";
 import { applyDeclare, findPaymentTarget } from "./payments";
 import { getSettings } from "./data";
-import { matchSenderName, parseTransferContent, senderNameOf } from "./reconcile";
+import { matchSenderName, parseTransferContent, senderCandidates } from "./reconcile";
 
 export interface IncomingTransfer {
   externalId: string;
@@ -24,12 +24,13 @@ export type IngestResult =
  *  - không có mã đội                 → pending nếu là tài khoản riêng của đội, ngược lại bỏ qua
  *  - không rõ mã nhưng nội dung có họ tên đúng 1 thành viên VÀ số tiền khớp đúng 1 khoản người đó
  *    đang nợ (VD chuyển cho người nhận đã lưu, ngân hàng tự ghi "NGUYEN VAN HUNG chuyen tien") → matched
+ *  - chuyển qua nút của Zalo ("Hung Beo chuyen khoan nhanh qua Zalo") → so thêm tên Zalo, cùng điều kiện số tiền
  */
 export async function ingestTransfer(t: IncomingTransfer): Promise<IngestResult> {
   if (!(t.amount > 0)) return { status: "skipped", reason: "not incoming" };
   const st = await getSettings();
   const mems = await db
-    .select({ id: members.id, code: members.code, name: members.name, bankHolder: members.bankHolder })
+    .select({ id: members.id, code: members.code, name: members.name, bankHolder: members.bankHolder, zaloName: members.zaloName })
     .from(members);
   const parsed = parseTransferContent(t.content, st.prefix, mems.map((m) => m.code));
 
@@ -41,7 +42,7 @@ export async function ingestTransfer(t: IncomingTransfer): Promise<IngestResult>
   let byName = false;
   if (!member) {
     // Theo tên chỉ khi số tiền khớp đúng một khoản đang nợ – tránh gán nhầm
-    const id = matchSenderName(t.content, mems.map((m) => ({ id: m.id, name: senderNameOf(m) })));
+    const id = matchSenderName(t.content, senderCandidates(t.content, mems));
     const named = id != null ? await findPaymentTarget(id, amount) : null;
     if (named) {
       member = mems.find((m) => m.id === id);

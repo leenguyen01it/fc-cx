@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { computeSplit, settledTotal, sponsorThanks, summarizeTotals, teamFromAmount, type SplitItem, type SplitPlayer } from "../split";
 import { allocate } from "../ledger";
 import { buildVietQr, crc16 } from "../vietqr";
-import { matchSenderName, parseTransferContent, senderNameOf } from "../reconcile";
+import { matchSenderName, parseTransferContent, senderCandidates, senderNameOf } from "../reconcile";
 import { suggestCode } from "../text";
 import { transferContent } from "../reconcile";
 import { bankAppDeeplink } from "../vietqr";
@@ -289,6 +289,22 @@ describe("matchSenderName", () => {
     ];
     expect(matchSenderName("PHAN VAN HUNG chuyen tien", ppl)).toBeNull();
     expect(matchSenderName("NGUYEN VAN HUNG chuyen tien", ppl)).toBe(1);
+  });
+  it("chuyển qua nút của Zalo: nhận theo tên Zalo (kể cả 1 chữ), chỉ khi nội dung là của Zalo", () => {
+    const mems = [
+      { id: 1, name: "Văn Hùng", bankHolder: "NGUYEN VAN HUNG", zaloName: "Hùng Béo 🐷" },
+      { id: 2, name: "Anh Tuấn", bankHolder: "", zaloName: "Tuấn" },
+      { id: 3, name: "Minh Nam", bankHolder: "TRAN MINH NAM", zaloName: "" },
+    ];
+    const z1 = "MBVCB.123.Hung Beo chuyen khoan nhanh qua Zalo.CT tu 0123";
+    expect(matchSenderName(z1, senderCandidates(z1, mems))).toBe(1);
+    const z2 = "Tuan chuyen khoan nhanh qua Zalo";
+    expect(matchSenderName(z2, senderCandidates(z2, mems))).toBe(2);
+    // không phải Zalo → tên Zalo không dùng
+    expect(matchSenderName("Tuan chuyen tien", senderCandidates("Tuan chuyen tien", mems))).toBeNull();
+    // Zalo nhưng tên chủ tài khoản vẫn nhận như thường
+    const z3 = "TRAN MINH NAM chuyen khoan nhanh qua Zalo";
+    expect(matchSenderName(z3, senderCandidates(z3, mems))).toBe(3);
   });
   it("không rõ hoặc nhiều người → null", () => {
     expect(matchSenderName("chuyen tien", people)).toBeNull();

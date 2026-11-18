@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, Hash, Landmark, QrCode, Save, UserRound, UserRoundPen } from "lucide-react";
+import { ChevronRight, Hash, Landmark, MessageCircle, QrCode, Save, UserRound, UserRoundPen } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { formatK, memberPath } from "@/lib/text";
@@ -13,7 +13,7 @@ export function MemberRow({
   member: m,
   balance,
 }: {
-  member: { id: number; name: string; code: string; active: boolean; bankHolder: string };
+  member: { id: number; name: string; code: string; active: boolean; bankHolder: string; zaloName: string };
   balance: number;
 }) {
   const [open, setOpen] = useState(false);
@@ -56,6 +56,9 @@ export function MemberRow({
               icon={<Landmark />}
               className="uppercase"
             />
+          </Field>
+          <Field label="Tên Zalo" name="zaloName" optional>
+            <TextInput name="zaloName" defaultValue={m.zaloName} placeholder="Hùng Béo" autoComplete="off" icon={<MessageCircle />} />
           </Field>
           <Switch name="active" defaultChecked={m.active} label="Đang hoạt động" />
           <Link href={memberPath(m.code)} className={cx(btn.soft, "w-full")}>

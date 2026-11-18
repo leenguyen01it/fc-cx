@@ -48,6 +48,8 @@ export const members = pgTable(
     guest: boolean("guest").notNull().default(false),
     /** Họ tên chủ tài khoản ngân hàng của người này (không dấu), VD "NGUYEN VAN HUNG" – để nhận tiền theo tên người chuyển. */
     bankHolder: text("bank_holder").notNull().default(""),
+    /** Tên Zalo (như hiện trong nhóm) – nhận tiền chuyển bằng nút chuyển khoản của Zalo. */
+    zaloName: text("zalo_name").notNull().default(""),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [uniqueIndex("members_code_uq").on(t.code)],

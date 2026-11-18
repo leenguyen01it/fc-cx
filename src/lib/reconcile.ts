@@ -52,14 +52,15 @@ export function parseTransferContent(raw: string, prefix: string, codes: string[
  * Nội dung mặc định của ngân hàng thường có họ tên người chuyển ("NGUYEN VAN HUNG chuyen tien")
  * → tìm thành viên có họ tên đầy đủ (không dấu, ≥ 2 chữ) nằm liền trong nội dung.
  * Tên ngắn nằm trong tên dài hơn cùng chỗ thì bỏ ("VAN HUNG" trong "NGUYEN VAN HUNG").
+ * Một người có thể có nhiều tên (tên chủ tài khoản, tên Zalo…); minWords mặc định 2.
  * Trả về id chỉ khi đúng 1 người khớp; nhiều người / không ai → null.
  */
-export function matchSenderName(raw: string, people: { id: number; name: string }[]): number | null {
+export function matchSenderName(raw: string, people: { id: number; name: string; minWords?: number }[]): number | null {
   const tokens = normalizeContent(raw).split(" ").filter(Boolean);
   const hits: { id: number; start: number; end: number }[] = [];
   for (const p of people) {
     const parts = normalizeContent(p.name).split(" ").filter(Boolean);
-    if (parts.length < 2) continue;
+    if (!parts.length || parts.length < (p.minWords ?? 2)) continue;
     const compact = parts.join("");
     for (let i = 0; i < tokens.length; i++) {
       if (parts.every((w, k) => tokens[i + k] === w)) hits.push({ id: p.id, start: i, end: i + parts.length });
@@ -80,6 +81,26 @@ export function matchSenderName(raw: string, people: { id: number; name: string 
 export function senderNameOf(m: { name: string; bankHolder: string }): string {
   if (m.bankHolder.trim()) return m.bankHolder;
   return m.name.trim().split(/\s+/).length >= 3 ? m.name : "";
+}
+
+/** Chuyển bằng nút chuyển khoản của Zalo: nội dung thành "<tên Zalo> chuyen khoan nhanh qua Zalo". */
+export function viaZalo(raw: string): boolean {
+  return normalizeContent(raw).split(" ").includes("ZALO");
+}
+
+/**
+ * Các tên để nhận người chuyển của mỗi thành viên.
+ * Tên Zalo chỉ dùng khi nội dung là của Zalo – lúc đó cho phép cả tên Zalo 1 chữ.
+ */
+export function senderCandidates(
+  raw: string,
+  people: { id: number; name: string; bankHolder: string; zaloName: string }[],
+): { id: number; name: string; minWords?: number }[] {
+  const zalo = viaZalo(raw);
+  return people.flatMap((m) => [
+    { id: m.id, name: senderNameOf(m) },
+    ...(zalo && m.zaloName.trim() ? [{ id: m.id, name: m.zaloName, minWords: 1 }] : []),
+  ]);
 }
 
 /** Nội dung chuyển khoản in trên thẻ QR: "CX HUNG CK da bong". */

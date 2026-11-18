@@ -1,0 +1,1 @@
+ALTER TABLE "members" ADD COLUMN "zalo_name" text DEFAULT '' NOT NULL;

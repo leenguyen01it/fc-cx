@@ -15,7 +15,7 @@ const errs = (r: { success: boolean; error?: unknown }) =>
 
 describe("memberCreateSchema", () => {
   it("chuẩn hoá mã: bỏ dấu, in hoa", () => {
-    expect(memberCreateSchema.parse({ name: "Nguyễn Văn Hùng", code: "hùng" })).toEqual({ name: "Nguyễn Văn Hùng", code: "HUNG", bankHolder: "" });
+    expect(memberCreateSchema.parse({ name: "Nguyễn Văn Hùng", code: "hùng" })).toEqual({ name: "Nguyễn Văn Hùng", code: "HUNG", bankHolder: "", zaloName: "" });
   });
   it("mã để trống thì hợp lệ (server tự tạo)", () => {
     expect(memberCreateSchema.parse({ name: "Nam", code: "" }).code).toBe("");

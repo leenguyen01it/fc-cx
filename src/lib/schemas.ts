@@ -55,6 +55,15 @@ const bankHolder = z
   .optional()
   .default("");
 
+/** Tên Zalo: để nguyên như trong nhóm (có dấu, emoji…), chỉ cần có chữ hoặc số. */
+const zaloName = z
+  .string()
+  .trim()
+  .max(60, "Tối đa 60 ký tự")
+  .refine((s) => !s || /[\p{L}\p{N}]/u.test(s), "Nhập tên Zalo")
+  .optional()
+  .default("");
+
 export const memberCode = z
   .string()
   .trim()
@@ -80,6 +89,7 @@ export const memberCreateSchema = z.object({
   name: personName,
   code: z.union([z.literal(""), memberCode]).optional().default(""),
   bankHolder,
+  zaloName,
 });
 
 export const memberUpdateSchema = z.object({
@@ -88,6 +98,7 @@ export const memberUpdateSchema = z.object({
   code: memberCode,
   active: bool,
   bankHolder,
+  zaloName,
 });
 
 export const settingsSchema = z
