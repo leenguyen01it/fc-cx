@@ -64,7 +64,9 @@ export function buildSummaryText(m: ZaloMatchInput): string {
     lines.push(`🎁 Cảm ơn ${t.name} đã ủng hộ ${formatK(t.amount)} ${t.items.join(", ").toLowerCase()}!`);
   }
 
+  // Mỗi nhóm (đội thua / đội thắng / chỉ ăn) cách nhau 1 dòng cho dễ đọc
   for (const t of summarizeTotals(split, tn)) {
+    lines.push("");
     lines.push(`👉 ${t.label}: ${formatK(t.common)}/người`);
     for (const e of t.exceptions) {
       lines.push(`👉 ${nm(e.memberId)}${e.reason ? ` (${e.reason})` : ""}: ${formatK(e.total)}`);
