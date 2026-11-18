@@ -221,9 +221,9 @@ describe("link đóng tiền cuối tin nhắn Zalo", () => {
   it("tổng kết trận và nhắc đóng tiền đều có link ở dòng cuối", () => {
     const split = computeSplit([{ memberId: 1, team: null, ate: true }], [item({ name: "Ăn", amount: 100_000, rule: "eaters" })], null, null);
     const sum = buildSummaryText({ teamName: "FC CX", date: "2026-11-15", venue: "", scoreA: null, scoreB: null, split, names: new Map([[1, "A"]]), link });
-    expect(sum.split("\n").at(-1)).toBe(`💳 Xem số tiền & đóng tiền tại: ${link}`);
+    expect(sum.split("\n").at(-1)).toBe(`👀 Xem số tiền & kiểm tra đã đóng chưa: ${link}`);
     const rem = buildReminderText("FC CX", "2026-11-15", [{ name: "A", remaining: 100_000 }], link);
-    expect(rem.split("\n").at(-1)).toBe(`💳 Xem số tiền & đóng tiền tại: ${link}`);
+    expect(rem.split("\n").at(-1)).toBe(`👀 Xem số tiền & kiểm tra đã đóng chưa: ${link}`);
   });
 });
 

@@ -10,11 +10,11 @@ export interface ZaloMatchInput {
   split: SplitResult;
   names: Map<number, string>;
   teamNames?: TeamNames;
-  /** Link trận trên trang đội – in ở cuối để mọi người vào đóng tiền. */
+  /** Link trận trên trang đội – in ở cuối để mọi người xem số tiền và kiểm tra đã đóng chưa. */
   link?: string;
 }
 
-const payLine = (link?: string) => (link ? ["", `💳 Xem số tiền & đóng tiền tại: ${link}`] : []);
+const payLine = (link?: string) => (link ? ["", `👀 Xem số tiền & kiểm tra đã đóng chưa: ${link}`] : []);
 
 const RULE_TEXT: Record<string, (i: SplitResult["items"][number]) => string> = {
   ratio: (b) => (b.item.loserPct === 50 ? "50/50" : `${b.item.loserPct / 10}/${10 - b.item.loserPct / 10}`),
